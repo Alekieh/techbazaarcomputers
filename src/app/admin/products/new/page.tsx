@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, Save, Plus, Trash2, AlertCircle, Sparkles, Eye, Image as ImageIcon } from "lucide-react";
+import { CloudinaryImageUploader } from "@/components/ui/CloudinaryImageUploader";
 
 export default function NewProductPage() {
   const router = useRouter();
@@ -27,8 +28,6 @@ export default function NewProductPage() {
   // Multi-image state
   const [images, setImages] = useState<string[]>([
     "/images/products/hp-elitebook-g8.jpg",
-    "/images/products/hp-x360-tent.jpg",
-    "/images/products/hp-elitebook.jpg",
   ]);
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -142,7 +141,7 @@ export default function NewProductPage() {
             Create Store Product
           </h1>
           <p className="text-slate-400 text-sm">
-            Publish a new laptop with multiple high-resolution photos into your Railway PostgreSQL database.
+            Upload laptop photo files directly from your computer to Cloudinary CDN & publish to PostgreSQL.
           </p>
         </div>
       </div>
@@ -285,13 +284,13 @@ export default function NewProductPage() {
             </div>
           </div>
 
-          {/* Section 2: Multi-Photo Management */}
+          {/* Section 2: Direct Computer File Upload to Cloudinary */}
           <div className="bg-[#0B0F19]/90 border border-slate-800/90 p-6 rounded-3xl space-y-6 shadow-xl backdrop-blur-xl">
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
               <div className="flex items-center gap-2">
                 <ImageIcon className="w-4 h-4 text-gold" />
                 <h3 className="text-base font-bold text-white">
-                  2. Multiple Laptop Photos ({images.length})
+                  2. Direct Laptop Photo Upload (Cloudinary CDN)
                 </h3>
               </div>
               <button
@@ -300,16 +299,39 @@ export default function NewProductPage() {
                 className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-gold font-bold rounded-xl text-xs flex items-center gap-1.5 transition-colors border border-gold/30"
               >
                 <Plus className="w-4 h-4" />
-                <span>Add Extra Photo Angle</span>
+                <span>Add Extra Photo Slot</span>
               </button>
             </div>
 
-            <div className="space-y-4">
+            {/* Direct Computer Drag & Drop Uploader */}
+            <div className="space-y-2">
+              <label className="block text-xs font-mono font-bold uppercase tracking-wider text-slate-400">
+                Upload Photo File from Your Computer:
+              </label>
+              <CloudinaryImageUploader
+                onImageUploaded={(url) => handleImageChange(activeImageIndex, url)}
+                currentImage={images[activeImageIndex]}
+              />
+            </div>
+
+            {/* Photo URLs List */}
+            <div className="space-y-4 pt-4 border-t border-slate-800/60">
+              <label className="block text-xs font-mono font-bold uppercase tracking-wider text-slate-400">
+                Manage Uploaded Photo Angles ({images.length}):
+              </label>
               {images.map((imgUrl, i) => (
                 <div key={i} className="flex items-center gap-3">
-                  <span className="text-xs font-mono font-bold text-gold w-16">
+                  <button
+                    type="button"
+                    onClick={() => setActiveImageIndex(i)}
+                    className={`text-xs font-mono font-bold px-3 py-1.5 rounded-xl border transition-colors ${
+                      activeImageIndex === i
+                        ? "bg-gold text-slate-950 border-gold"
+                        : "bg-slate-950 text-slate-400 border-slate-800"
+                    }`}
+                  >
                     Photo {i + 1}
-                  </span>
+                  </button>
                   <input
                     type="text"
                     placeholder={`Photo URL #${i + 1}`}
@@ -333,7 +355,7 @@ export default function NewProductPage() {
             {/* Quick Presets Picker */}
             <div className="pt-3 border-t border-slate-800/60">
               <label className="block text-xs font-mono font-bold uppercase tracking-wider text-slate-400 mb-2">
-                Quick Studio Presets (Click to add to gallery):
+                Quick Studio Presets:
               </label>
               <div className="flex flex-wrap gap-2">
                 {presetImages.map((preset, i) => (
