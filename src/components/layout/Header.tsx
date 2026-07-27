@@ -4,12 +4,15 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCart } from "@/components/cart/CartProvider";
+import { useWishlist } from "@/components/wishlist/WishlistProvider";
+import { Heart, ShoppingBag, UserCheck, Menu, X } from "lucide-react";
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const { toggleCart, itemCount } = useCart();
+  const { wishlistCount } = useWishlist();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -75,107 +78,96 @@ export default function Header() {
             </ul>
           </nav>
 
-          {/* Right section: Cart & Mobile toggle */}
-          <div className="flex items-center gap-4">
+          {/* Right section: Wishlist, My Orders, Cart & Mobile toggle */}
+          <div className="flex items-center gap-3 md:gap-4">
+            {/* Wishlist Link */}
+            <Link
+              href="/wishlist"
+              className="relative p-2 text-slate-100 hover:text-gold transition-colors"
+              title="My Saved Wishlist"
+            >
+              <Heart className="w-5 h-5" />
+              {wishlistCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-[10px] font-bold flex items-center justify-center animate-scale-in">
+                  {wishlistCount}
+                </span>
+              )}
+            </Link>
+
+            {/* Customer Orders History Link */}
+            <Link
+              href="/account/orders"
+              className="p-2 text-slate-100 hover:text-gold transition-colors hidden sm:block"
+              title="My Orders & Shipping History"
+            >
+              <UserCheck className="w-5 h-5" />
+            </Link>
+
+            {/* Shopping Cart Button */}
             <button
               onClick={toggleCart}
               className="relative p-2 text-slate-100 hover:text-gold transition-colors"
               aria-label="Toggle cart"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
-                <path d="M3 6h18" />
-                <path d="M16 10a4 4 0 0 1-8 0" />
-              </svg>
+              <ShoppingBag className="w-5 h-5" />
               {itemCount > 0 && (
-                <span className="absolute -top-2 -right-2 w-5 h-5 bg-gold text-slate-950 rounded-full text-xs font-bold flex items-center justify-center animate-scale-in">
+                <span className="absolute -top-1 -right-1 w-4.5 h-4.5 bg-gold text-slate-950 rounded-full text-[10px] font-black flex items-center justify-center animate-scale-in">
                   {itemCount}
                 </span>
               )}
             </button>
 
             <button
-              className="md:hidden p-2 text-slate-100 hover:text-gold transition-colors"
+              className="lg:hidden p-2 text-slate-100 hover:text-gold transition-colors"
               onClick={() => setIsMobileMenuOpen(true)}
               aria-label="Open menu"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <line x1="4" x2="20" y1="12" y2="12" />
-                <line x1="4" x2="20" y1="6" y2="6" />
-                <line x1="4" x2="20" y1="18" y2="18" />
-              </svg>
+              <Menu className="w-6 h-6" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Drawer Menu */}
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 bg-white/98 backdrop-blur-xl z-50 animate-fade-in-fast md:hidden flex flex-col">
+        <div className="fixed inset-0 bg-slate-950/98 backdrop-blur-xl z-50 animate-fade-in-fast lg:hidden flex flex-col">
           <div className="flex justify-end p-4 sm:px-6">
             <button
               onClick={() => setIsMobileMenuOpen(false)}
-              className="p-2 text-dark-100 hover:text-gold transition-colors"
+              className="p-2 text-slate-100 hover:text-gold transition-colors"
               aria-label="Close menu"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M18 6 6 18" />
-                <path d="m6 6 12 12" />
-              </svg>
+              <X className="w-6 h-6" />
             </button>
           </div>
-          <div className="flex-1 flex flex-col items-center justify-center pb-20">
-            <ul className="flex flex-col items-center space-y-8">
-              {navLinks.map((link) => {
-                const isActive = pathname === link.href || (pathname === "/products" && link.href.startsWith("/products"));
-                return (
-                  <li key={link.name}>
-                    <Link
-                      href={link.href}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className={`text-2xl font-medium transition-colors ${
-                        isActive
-                          ? "text-gold"
-                          : "text-dark-200 hover:text-gold"
-                      }`}
-                    >
-                      {link.name}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
+          <nav className="flex-1 flex flex-col justify-center items-center gap-6 px-4">
+            {navLinks.map((link) => (
+              <Link
+                key={link.name}
+                href={link.href}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="text-2xl font-bold text-slate-100 hover:text-gold transition-colors"
+              >
+                {link.name}
+              </Link>
+            ))}
+            <Link
+              href="/wishlist"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="text-xl font-bold text-red-400 hover:text-red-300 transition-colors flex items-center gap-2"
+            >
+              <Heart className="w-5 h-5 fill-red-400" />
+              Saved Wishlist ({wishlistCount})
+            </Link>
+            <Link
+              href="/account/orders"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="text-xl font-bold text-gold hover:text-amber-300 transition-colors flex items-center gap-2"
+            >
+              <UserCheck className="w-5 h-5" />
+              My Purchases & Orders
+            </Link>
+          </nav>
         </div>
       )}
     </header>
