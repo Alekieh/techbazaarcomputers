@@ -51,15 +51,47 @@ export default function CheckoutPage() {
     setCurrentStep(3); // Auto-advance to Review
   };
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     setIsPlacingOrder(true);
-    setTimeout(() => {
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerName: contactInfo.name,
+          customerPhone: contactInfo.phone,
+          customerEmail: contactInfo.email,
+          deliveryRegion: deliveryInfo.region,
+          deliveryCity: deliveryInfo.city,
+          deliveryAddress: deliveryInfo.address,
+          deliveryNotes: deliveryInfo.notes,
+          paymentMethod: paymentMethod.toUpperCase(),
+          mpesaTxCode: confirmedTxCode || tillTxCode || null,
+          items: items.map(item => ({
+            productId: item.product.id,
+            name: item.product.name,
+            quantity: item.quantity,
+            price: item.product.price,
+          })),
+          subtotal,
+          deliveryFee: 0,
+          total: subtotal,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setOrderNumber(data.orderNumber);
+        setOrderSuccess(true);
+        clearCart();
+      } else {
+        alert(data.error || "Failed to place order. Please try again.");
+      }
+    } catch (err) {
+      alert("Error placing order. Please check your connection.");
+    } finally {
       setIsPlacingOrder(false);
-      const randomOrder = Math.floor(100000 + Math.random() * 900000);
-      setOrderNumber(`TB-${randomOrder}`);
-      setOrderSuccess(true);
-      clearCart();
-    }, 1800);
+    }
   };
 
   if (orderSuccess) {

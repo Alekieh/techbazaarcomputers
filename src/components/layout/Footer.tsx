@@ -82,10 +82,14 @@ export default function Footer() {
           <div>
             <h3 className="text-sm font-semibold text-gold uppercase tracking-wider mb-4">Quick Links</h3>
             <ul className="space-y-3">
-              <li><Link href="/" className="text-sm text-dark-300 hover:text-gold transition-colors">Home</Link></li>
-              <li><Link href="/products" className="text-sm text-dark-300 hover:text-gold transition-colors">Products</Link></li>
-              <li><Link href="/about" className="text-sm text-dark-300 hover:text-gold transition-colors">About Us</Link></li>
-              <li><Link href="/contact" className="text-sm text-dark-300 hover:text-gold transition-colors">Contact</Link></li>
+              <li><Link href="/" className="text-sm text-slate-300 hover:text-gold transition-colors">Home</Link></li>
+              <li><Link href="/products" className="text-sm text-slate-300 hover:text-gold transition-colors">Products</Link></li>
+              <li><Link href="/about" className="text-sm text-slate-300 hover:text-gold transition-colors">About Us</Link></li>
+              <li><Link href="/shipping" className="text-sm text-slate-300 hover:text-gold transition-colors">Shipping & Delivery</Link></li>
+              <li><Link href="/returns" className="text-sm text-slate-300 hover:text-gold transition-colors">Returns & Warranty</Link></li>
+              <li><Link href="/privacy" className="text-sm text-slate-300 hover:text-gold transition-colors">Privacy Policy</Link></li>
+              <li><Link href="/terms" className="text-sm text-slate-300 hover:text-gold transition-colors">Terms & Conditions</Link></li>
+              <li><Link href="/admin" className="text-xs text-gold/80 hover:text-gold transition-colors font-semibold">Admin Portal</Link></li>
             </ul>
           </div>
 

@@ -1,0 +1,52 @@
+import Link from "next/link";
+import { ArrowLeft, Truck, MapPin } from "lucide-react";
+
+export const metadata = {
+  title: "Shipping & Delivery | Tech Bazaar Kenya",
+  description: "Fast same-day delivery across Nairobi and nationwide courier shipping across Kenya.",
+};
+
+export default function ShippingPage() {
+  return (
+    <main className="min-h-screen bg-slate-950 text-white py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
+        <div>
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-400 hover:text-gold transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back to Store</span>
+          </Link>
+          <div className="flex items-center gap-3 mt-4">
+            <div className="w-10 h-10 rounded-xl bg-gold/10 text-gold flex items-center justify-center">
+              <Truck className="w-5 h-5" />
+            </div>
+            <h1 className="text-3xl font-extrabold text-white tracking-tight">
+              Shipping & Delivery
+            </h1>
+          </div>
+          <p className="text-slate-400 text-sm mt-2">
+            Same-day Nairobi delivery & 24-hour nationwide parcel shipping
+          </p>
+        </div>
+
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 space-y-6 text-slate-300 text-sm leading-relaxed shadow-xl">
+          <section className="space-y-2">
+            <h2 className="text-lg font-bold text-white">1. Nairobi & Environs (FREE Same-Day)</h2>
+            <p>
+              Orders placed before 3:00 PM within Nairobi CBD, Westlands, Kilimani, Kiambu Road, Thika Road, and environs qualify for FREE same-day rider delivery. Cash / M-Pesa on Delivery is supported.
+            </p>
+          </section>
+
+          <section className="space-y-2">
+            <h2 className="text-lg font-bold text-white">2. Countrywide Shipping (G4S / Wells Fargo / Easy Coach)</h2>
+            <p>
+              For orders outside Nairobi (Mombasa, Kisumu, Nakuru, Eldoret, Nyeri, Meru, etc.), we ship via reputable courier services (G4S / Wells Fargo / North Rift / Easy Coach). Delivery takes 24 hours.
+            </p>
+          </section>
+        </div>
+      </div>
+    </main>
+  );
+}
