@@ -12,7 +12,17 @@ export async function GET() {
     const orders = await db.order.findMany({
       orderBy: { createdAt: "desc" },
       include: {
-        items: true,
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                image: true,
+                slug: true,
+              },
+            },
+          },
+        },
         user: { select: { id: true, name: true, email: true } },
       },
     });

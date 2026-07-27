@@ -10,8 +10,12 @@ import {
   Phone,
   Mail,
   MapPin,
-  FileText,
   DollarSign,
+  Copy,
+  Check,
+  Smartphone,
+  ShieldCheck,
+  Filter,
 } from "lucide-react";
 
 export default function AdminOrdersPage() {
@@ -20,6 +24,7 @@ export default function AdminOrdersPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -67,6 +72,12 @@ export default function AdminOrdersPage() {
     }
   };
 
+  const copyTxCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCode(code);
+    setTimeout(() => setCopiedCode(null), 2000);
+  };
+
   const filteredOrders = orders.filter((o) => {
     const matchesSearch =
       o.orderNumber.toLowerCase().includes(search.toLowerCase()) ||
@@ -90,36 +101,40 @@ export default function AdminOrdersPage() {
   return (
     <div className="space-y-6 animate-fade-in pb-16">
       {/* Header Bar */}
-      <div>
-        <h1 className="text-3xl font-extrabold text-white tracking-tight">
-          Customer Orders ({filteredOrders.length})
-        </h1>
-        <p className="text-slate-400 text-sm mt-1">
-          Review placed orders, verify M-Pesa payments, and update delivery fulfillment status.
-        </p>
+      <div className="bg-[#0B0F19]/90 border border-slate-800/90 rounded-3xl p-6 shadow-2xl backdrop-blur-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 text-gold text-xs font-mono font-bold tracking-widest uppercase mb-1">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>Fulfillment Operations</span>
+          </div>
+          <h1 className="text-3xl font-black text-white tracking-tight">
+            Customer Orders ({filteredOrders.length})
+          </h1>
+          <p className="text-slate-400 text-sm mt-1">
+            Review checkout submissions, verify M-Pesa payment codes, and update order statuses.
+          </p>
+        </div>
       </div>
 
       {/* Filter & Search Bar */}
-      <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex flex-col md:flex-row gap-4 justify-between items-center">
+      <div className="bg-[#0B0F19]/90 border border-slate-800/90 p-4 rounded-3xl backdrop-blur-xl flex flex-col md:flex-row gap-4 justify-between items-center shadow-xl">
         <div className="relative w-full md:w-96">
-          <Search className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+          <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
           <input
             type="text"
-            placeholder="Search by Order #, Customer Name, Phone, or M-Pesa Code..."
+            placeholder="Search Order #, Customer Name, Phone, M-Pesa Code..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-11 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:border-gold"
+            className="w-full pl-11 pr-4 py-3 bg-slate-950/80 border border-slate-800/80 rounded-2xl text-white text-sm placeholder-slate-500 focus:outline-none focus:border-gold transition-colors font-mono text-xs"
           />
         </div>
 
         <div className="flex items-center gap-3 w-full md:w-auto">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            Status:
-          </span>
+          <Filter className="w-4 h-4 text-gold shrink-0" />
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-slate-950 border border-slate-800 text-slate-200 text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:border-gold"
+            className="bg-slate-950/80 border border-slate-800/80 text-slate-200 text-sm rounded-2xl px-4 py-3 focus:outline-none focus:border-gold font-medium"
           >
             <option value="all">All Order Statuses</option>
             <option value="PENDING">PENDING</option>
@@ -133,61 +148,56 @@ export default function AdminOrdersPage() {
 
       {/* Orders List */}
       {loading ? (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center text-slate-400 flex flex-col items-center justify-center gap-3">
-          <div className="w-8 h-8 border-4 border-gold border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm">Loading orders from database...</p>
+        <div className="bg-[#0B0F19]/90 border border-slate-800/90 rounded-3xl p-16 text-center text-slate-400 flex flex-col items-center justify-center gap-3">
+          <div className="w-9 h-9 border-4 border-gold border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm font-mono">Loading orders from PostgreSQL...</p>
         </div>
       ) : filteredOrders.length === 0 ? (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center text-slate-500">
-          <ShoppingBag className="w-12 h-12 mx-auto mb-3 text-slate-600 opacity-40" />
-          <p className="text-base font-semibold text-slate-300">
-            No orders found
-          </p>
-          <p className="text-sm text-slate-500 mt-1">
-            There are currently no customer orders matching your filter.
-          </p>
+        <div className="bg-[#0B0F19]/90 border border-slate-800/90 rounded-3xl p-16 text-center text-slate-500">
+          <ShoppingBag className="w-12 h-12 mx-auto mb-3 text-slate-700 opacity-40 animate-pulse" />
+          <p className="text-base font-bold text-slate-300">No orders found</p>
+          <p className="text-xs text-slate-500 mt-1">There are currently no orders matching your search.</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-5">
           {filteredOrders.map((order) => (
             <div
               key={order.id}
-              className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6"
+              className="bg-[#0B0F19]/90 border border-slate-800/90 rounded-3xl p-6 shadow-2xl backdrop-blur-xl space-y-6 hover:border-slate-700 transition-colors"
             >
               {/* Order Header */}
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
                 <div>
                   <div className="flex items-center gap-3">
-                    <span className="font-mono text-xl font-extrabold text-white">
+                    <span className="font-mono text-xl font-black text-white">
                       {order.orderNumber}
                     </span>
-                    <span className="text-xs text-slate-400">
+                    <span className="text-xs font-mono text-slate-400">
                       {new Date(order.createdAt).toLocaleString("en-KE")}
                     </span>
                   </div>
                   <div className="flex items-center gap-4 mt-2 text-sm text-slate-300">
-                    <span className="flex items-center gap-1.5 font-medium">
-                      <Phone className="w-4 h-4 text-gold" />
+                    <span className="flex items-center gap-1.5 font-bold font-mono text-white">
+                      <Smartphone className="w-4 h-4 text-gold" />
                       <span>{order.customerPhone}</span>
                     </span>
-                    <span className="flex items-center gap-1.5 text-slate-400">
-                      <Mail className="w-4 h-4 text-slate-500" />
+                    <span className="flex items-center gap-1.5 text-slate-400 text-xs">
+                      <Mail className="w-3.5 h-3.5 text-slate-500" />
                       <span>{order.customerEmail}</span>
                     </span>
                   </div>
                 </div>
 
-                {/* Status Selectors */}
+                {/* Status Dropdowns */}
                 <div className="flex flex-wrap items-center gap-3">
-                  {/* Payment Status Dropdown */}
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-400">Payment:</span>
+                    <span className="text-xs font-mono text-slate-400">Payment:</span>
                     <select
                       value={order.paymentStatus}
                       onChange={(e) =>
                         handleStatusChange(order.id, "paymentStatus", e.target.value)
                       }
-                      className={`text-xs font-bold rounded-xl px-3 py-1.5 border focus:outline-none ${
+                      className={`text-xs font-mono font-bold rounded-xl px-3.5 py-2 border focus:outline-none ${
                         order.paymentStatus === "PAID"
                           ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
                           : "bg-amber-500/10 text-amber-400 border-amber-500/30"
@@ -199,15 +209,14 @@ export default function AdminOrdersPage() {
                     </select>
                   </div>
 
-                  {/* Order Status Dropdown */}
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-400">Fulfillment:</span>
+                    <span className="text-xs font-mono text-slate-400">Fulfillment:</span>
                     <select
                       value={order.orderStatus}
                       onChange={(e) =>
                         handleStatusChange(order.id, "orderStatus", e.target.value)
                       }
-                      className="text-xs font-bold rounded-xl px-3 py-1.5 bg-slate-950 text-gold border border-gold/30 focus:outline-none"
+                      className="text-xs font-mono font-bold rounded-xl px-3.5 py-2 bg-slate-950 text-gold border border-gold/40 focus:outline-none"
                     >
                       <option value="PENDING">PENDING</option>
                       <option value="CONFIRMED">CONFIRMED</option>
@@ -219,82 +228,102 @@ export default function AdminOrdersPage() {
                 </div>
               </div>
 
-              {/* Order Info & Delivery Address Grid */}
+              {/* Delivery & Payment Grid */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
                 <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
+                  <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
                     <MapPin className="w-4 h-4 text-gold" />
-                    <span>Delivery Details</span>
+                    <span>Delivery Address</span>
                   </h4>
-                  <p className="font-semibold text-white">
+                  <p className="font-bold text-white text-base">
                     {order.customerName}
                   </p>
-                  <p className="text-slate-300">
+                  <p className="text-slate-300 mt-0.5">
                     {order.deliveryAddress}, {order.deliveryCity}
                   </p>
-                  <p className="text-xs text-slate-500 mt-1">
+                  <p className="text-xs font-mono text-slate-500 mt-1">
                     Region: {order.deliveryRegion}
                   </p>
                   {order.deliveryNotes && (
-                    <p className="text-xs text-amber-400/90 mt-2 bg-amber-500/5 p-2 rounded-lg border border-amber-500/20">
+                    <p className="text-xs text-amber-400 bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/20 mt-2">
                       Notes: {order.deliveryNotes}
                     </p>
                   )}
                 </div>
 
                 <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
+                  <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
                     <DollarSign className="w-4 h-4 text-gold" />
-                    <span>Payment Information</span>
+                    <span>Payment Verification</span>
                   </h4>
                   <p className="text-slate-300">
-                    Method: <span className="font-semibold text-white">{order.paymentMethod}</span>
+                    Method: <span className="font-bold text-white">{order.paymentMethod}</span>
                   </p>
-                  {order.mpesaTxCode && (
-                    <p className="text-xs text-emerald-400 font-mono mt-1 font-bold">
-                      M-Pesa Ref: {order.mpesaTxCode}
-                    </p>
+
+                  {order.mpesaTxCode ? (
+                    <div className="mt-2 inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 rounded-xl text-emerald-400 text-xs font-mono font-bold">
+                      <span>Ref: {order.mpesaTxCode}</span>
+                      <button
+                        onClick={() => copyTxCode(order.mpesaTxCode)}
+                        className="hover:text-white transition-colors"
+                        title="Copy Code"
+                      >
+                        {copiedCode === order.mpesaTxCode ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-300" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="inline-block mt-2 text-xs font-mono text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-lg">
+                      Pending Ref Verification
+                    </span>
                   )}
-                  <p className="text-xs text-slate-400 mt-1">
-                    Delivery Fee: {formatPrice(order.deliveryFee)}
-                  </p>
                 </div>
 
-                <div className="bg-slate-950/80 p-4 rounded-xl border border-slate-800 flex flex-col justify-between">
-                  <div className="text-xs text-slate-400 uppercase tracking-wider">
+                <div className="bg-slate-950/80 p-5 rounded-2xl border border-slate-800/80 flex flex-col justify-between shadow-inner">
+                  <span className="text-[11px] font-mono font-bold text-slate-400 uppercase tracking-wider">
                     Total Order Value
-                  </div>
-                  <div className="text-2xl font-extrabold text-gold mt-1">
+                  </span>
+                  <span className="text-2xl font-black text-gold font-mono mt-1">
                     {formatPrice(order.total)}
-                  </div>
-                  <div className="text-xs text-slate-500 mt-1">
-                    {order.items.length} product(s) ordered
-                  </div>
+                  </span>
+                  <span className="text-xs text-slate-500 mt-1 font-mono">
+                    {order.items.length} product item(s)
+                  </span>
                 </div>
               </div>
 
               {/* Items Breakdown Table */}
-              <div className="bg-slate-950/60 rounded-xl border border-slate-800/80 overflow-hidden">
+              <div className="bg-slate-950/60 rounded-2xl border border-slate-800/80 overflow-hidden">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
+                  <thead className="bg-slate-950 text-slate-400 font-mono uppercase tracking-wider font-bold border-b border-slate-800">
                     <tr>
-                      <th className="px-4 py-2.5">Item Name</th>
-                      <th className="px-4 py-2.5">Qty</th>
-                      <th className="px-4 py-2.5">Unit Price</th>
-                      <th className="px-4 py-2.5 text-right">Subtotal</th>
+                      <th className="px-4 py-3">Ordered Item</th>
+                      <th className="px-4 py-3">Quantity</th>
+                      <th className="px-4 py-3">Unit Price</th>
+                      <th className="px-4 py-3 text-right">Subtotal</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/50 text-slate-300">
                     {order.items.map((item: any) => (
                       <tr key={item.id}>
-                        <td className="px-4 py-2.5 font-medium text-white">
-                          {item.productName}
+                        <td className="px-4 py-3 font-bold text-white flex items-center gap-3">
+                          <div className="relative w-10 h-10 rounded-xl bg-slate-950 border border-slate-800 overflow-hidden shrink-0 shadow-inner">
+                            <img
+                              src={item.product?.image || "/images/products/hp-elitebook-g8.jpg"}
+                              alt={item.productName}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <span>{item.productName}</span>
                         </td>
-                        <td className="px-4 py-2.5">{item.quantity}</td>
-                        <td className="px-4 py-2.5">
+                        <td className="px-4 py-3 font-mono">{item.quantity}</td>
+                        <td className="px-4 py-3 font-mono">
                           {formatPrice(item.unitPrice)}
                         </td>
-                        <td className="px-4 py-2.5 text-right font-bold text-gold">
+                        <td className="px-4 py-3 text-right font-black text-gold font-mono">
                           {formatPrice(item.totalPrice)}
                         </td>
                       </tr>
