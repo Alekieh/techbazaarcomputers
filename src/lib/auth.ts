@@ -9,7 +9,7 @@ const JWT_SECRET_KEY = new TextEncoder().encode(
 export interface JWTPayload {
   userId: string;
   email: string;
-  role: "ADMIN" | "CUSTOMER";
+  role: "ADMIN" | "STAFF" | "CUSTOMER";
 }
 
 export async function signToken(payload: JWTPayload): Promise<string> {
