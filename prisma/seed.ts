@@ -1,3 +1,17 @@
+import fs from "fs";
+import path from "path";
+
+// Ensure DATABASE_URL has sslmode=require
+if (fs.existsSync(".env")) {
+  const envContent = fs.readFileSync(".env", "utf8");
+  for (const line of envContent.split("\n")) {
+    const match = line.match(/^\s*([\w.-]+)\s*=\s*"(.*)"\s*$/) || line.match(/^\s*([\w.-]+)\s*=\s*(.*)\s*$/);
+    if (match && !process.env[match[1]]) {
+      process.env[match[1]] = match[2];
+    }
+  }
+}
+
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { products } from "../src/data/products";
@@ -29,7 +43,44 @@ async function main() {
     console.log(`ℹ️ Admin user already exists: ${adminEmail}`);
   }
 
-  // 2. Seed Products
+  // 2. Seed Default Categories
+  const defaultCategories = [
+    { name: "Laptops", slug: "laptops" },
+    { name: "Desktops", slug: "desktops" },
+    { name: "Accessories", slug: "accessories" },
+    { name: "Business Laptops", slug: "business-laptops" },
+    { name: "Touchscreen 2-in-1", slug: "touchscreen-2-in-1" },
+  ];
+
+  for (const cat of defaultCategories) {
+    await db.category.upsert({
+      where: { slug: cat.slug },
+      update: {},
+      create: cat,
+    });
+  }
+  console.log("✅ Seeded default Categories");
+
+  // 3. Seed Default Brands
+  const defaultBrands = [
+    { name: "HP", slug: "hp" },
+    { name: "Dell", slug: "dell" },
+    { name: "Lenovo", slug: "lenovo" },
+    { name: "Apple", slug: "apple" },
+    { name: "Asus", slug: "asus" },
+    { name: "Acer", slug: "acer" },
+  ];
+
+  for (const brand of defaultBrands) {
+    await db.brand.upsert({
+      where: { slug: brand.slug },
+      update: {},
+      create: brand,
+    });
+  }
+  console.log("✅ Seeded default Brands");
+
+  // 4. Seed Products
   console.log(`📦 Seeding ${products.length} products into PostgreSQL database...`);
 
   for (const item of products) {
@@ -52,6 +103,9 @@ async function main() {
           image: item.image,
           images: item.images || [item.image],
           inStock: item.inStock ?? true,
+          stockQuantity: 5,
+          lowStockThreshold: 3,
+          active: true,
           rating: item.rating ?? 5.0,
           reviewCount: item.reviewCount ?? 12,
           badge: item.badge,
@@ -66,12 +120,12 @@ async function main() {
     }
   }
 
-  console.log("🎉 Database seeding completed successfully!");
+  console.log("🎉 Seeding completed successfully!");
 }
 
 main()
   .catch((e) => {
-    console.error("❌ Seeding failed:", e);
+    console.error("❌ Seed failed:", e);
     process.exit(1);
   })
   .finally(async () => {
