@@ -15,6 +15,9 @@ import {
   Sparkles,
   Maximize2,
   X,
+  ChevronLeft,
+  ChevronRight,
+  Images,
 } from "lucide-react";
 
 export default function AdminProductsPage() {
@@ -23,7 +26,13 @@ export default function AdminProductsPage() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [selectedImage, setSelectedImage] = useState<{ url: string; title: string } | null>(null);
+
+  // Gallery Modal state
+  const [activeGallery, setActiveGallery] = useState<{
+    images: string[];
+    title: string;
+    currentIndex: number;
+  } | null>(null);
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -64,6 +73,37 @@ export default function AdminProductsPage() {
     }
   };
 
+  const openGallery = (product: any) => {
+    const photoList =
+      product.images && product.images.length > 0
+        ? product.images
+        : [product.image || "/images/products/hp-elitebook-g8.jpg"];
+
+    setActiveGallery({
+      images: photoList,
+      title: product.name,
+      currentIndex: 0,
+    });
+  };
+
+  const nextPhoto = () => {
+    if (!activeGallery) return;
+    setActiveGallery({
+      ...activeGallery,
+      currentIndex: (activeGallery.currentIndex + 1) % activeGallery.images.length,
+    });
+  };
+
+  const prevPhoto = () => {
+    if (!activeGallery) return;
+    setActiveGallery({
+      ...activeGallery,
+      currentIndex:
+        (activeGallery.currentIndex - 1 + activeGallery.images.length) %
+        activeGallery.images.length,
+    });
+  };
+
   const filteredProducts = products.filter((p) => {
     const matchesSearch =
       p.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -93,7 +133,7 @@ export default function AdminProductsPage() {
             Products Catalog ({filteredProducts.length})
           </h1>
           <p className="text-slate-400 text-sm mt-1">
-            Manage live store items, laptop photography, pricing, and specs.
+            Manage live store items, multi-photo galleries, pricing, and specs.
           </p>
         </div>
 
@@ -152,8 +192,8 @@ export default function AdminProductsPage() {
             <table className="w-full text-left text-sm text-slate-300">
               <thead className="bg-slate-950/80 text-[11px] font-mono font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800/80">
                 <tr>
-                  <th className="px-6 py-4">Laptop Photography</th>
-                  <th className="px-6 py-4">Product Specs</th>
+                  <th className="px-6 py-4">Laptop Photos</th>
+                  <th className="px-6 py-4">Product Details</th>
                   <th className="px-6 py-4">Brand</th>
                   <th className="px-6 py-4">Selling Price</th>
                   <th className="px-6 py-4">Stock Status</th>
@@ -162,131 +202,184 @@ export default function AdminProductsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/50">
-                {filteredProducts.map((product) => (
-                  <tr key={product.id} className="hover:bg-slate-900/60 transition-colors group">
-                    {/* High-Res Photo Column */}
-                    <td className="px-6 py-4">
-                      <button
-                        onClick={() =>
-                          setSelectedImage({
-                            url: product.image || "/images/products/hp-elitebook-g8.jpg",
-                            title: product.name,
-                          })
-                        }
-                        className="relative w-20 h-16 rounded-2xl bg-slate-950 border border-slate-800 overflow-hidden shrink-0 shadow-inner group-hover:border-gold/60 transition-all duration-300 block group/img text-left"
-                        title="Click to view high-res photo"
-                      >
-                        <Image
-                          src={product.image || "/images/products/hp-elitebook-g8.jpg"}
-                          alt={product.name}
-                          fill
-                          className="object-cover group-hover/img:scale-110 transition-transform duration-500"
-                        />
-                        <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-white">
-                          <Maximize2 className="w-4 h-4 text-gold" />
-                        </div>
-                      </button>
-                    </td>
+                {filteredProducts.map((product) => {
+                  const photoCount =
+                    product.images && product.images.length > 0
+                      ? product.images.length
+                      : 1;
 
-                    {/* Title & Category Column */}
-                    <td className="px-6 py-4">
-                      <Link
-                        href={`/products/${product.slug}`}
-                        target="_blank"
-                        className="font-bold text-white hover:text-gold transition-colors flex items-center gap-1.5 text-base"
-                      >
-                        <span>{product.name}</span>
-                        <ExternalLink className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-gold" />
-                      </Link>
-                      <p className="text-xs font-mono text-slate-400 capitalize mt-0.5">
-                        Category: {product.category}
-                      </p>
-                    </td>
-
-                    <td className="px-6 py-4 font-semibold text-slate-200">{product.brand}</td>
-
-                    <td className="px-6 py-4">
-                      <div className="font-black text-gold font-mono text-base">{formatPrice(product.price)}</div>
-                      {product.originalPrice && (
-                        <div className="text-xs font-mono text-slate-500 line-through">
-                          {formatPrice(product.originalPrice)}
-                        </div>
-                      )}
-                    </td>
-
-                    <td className="px-6 py-4">
-                      {product.inStock ? (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                          <CheckCircle className="w-3.5 h-3.5" />
-                          <span>In Stock</span>
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-mono font-bold bg-red-500/10 text-red-400 border border-red-500/30">
-                          <XCircle className="w-3.5 h-3.5" />
-                          <span>Out of Stock</span>
-                        </span>
-                      )}
-                    </td>
-
-                    <td className="px-6 py-4">
-                      {product.badge ? (
-                        <span className="px-3 py-1 rounded-lg text-xs font-mono font-bold uppercase tracking-wider bg-gold/10 text-gold border border-gold/30">
-                          {product.badge}
-                        </span>
-                      ) : (
-                        <span className="text-slate-600 text-xs font-mono">—</span>
-                      )}
-                    </td>
-
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
+                  return (
+                    <tr key={product.id} className="hover:bg-slate-900/60 transition-colors group">
+                      {/* Multi-Photo Stack Column */}
+                      <td className="px-6 py-4">
                         <button
-                          onClick={() => handleDelete(product.id, product.name)}
-                          disabled={deletingId === product.id}
-                          className="p-2.5 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all border border-transparent hover:border-red-500/20"
-                          title="Delete Product"
+                          onClick={() => openGallery(product)}
+                          className="relative w-20 h-16 rounded-2xl bg-slate-950 border border-slate-800 overflow-hidden shrink-0 shadow-inner group-hover:border-gold/60 transition-all duration-300 block group/img text-left"
+                          title="Click to view all photo angles"
                         >
-                          {deletingId === product.id ? (
-                            <span className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
-                          ) : (
-                            <Trash2 className="w-4 h-4" />
-                          )}
+                          <Image
+                            src={product.image || "/images/products/hp-elitebook-g8.jpg"}
+                            alt={product.name}
+                            fill
+                            className="object-cover group-hover/img:scale-110 transition-transform duration-500"
+                          />
+                          <div className="absolute top-1 right-1 bg-slate-950/80 border border-slate-700 text-gold text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md flex items-center gap-1 shadow-md">
+                            <Images className="w-2.5 h-2.5" />
+                            <span>{photoCount}</span>
+                          </div>
+                          <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-white">
+                            <Maximize2 className="w-4 h-4 text-gold" />
+                          </div>
                         </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+
+                      {/* Title & Category Column */}
+                      <td className="px-6 py-4">
+                        <Link
+                          href={`/products/${product.slug}`}
+                          target="_blank"
+                          className="font-bold text-white hover:text-gold transition-colors flex items-center gap-1.5 text-base"
+                        >
+                          <span>{product.name}</span>
+                          <ExternalLink className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-gold" />
+                        </Link>
+                        <p className="text-xs font-mono text-slate-400 capitalize mt-0.5">
+                          Category: {product.category}
+                        </p>
+                      </td>
+
+                      <td className="px-6 py-4 font-semibold text-slate-200">{product.brand}</td>
+
+                      <td className="px-6 py-4">
+                        <div className="font-black text-gold font-mono text-base">{formatPrice(product.price)}</div>
+                        {product.originalPrice && (
+                          <div className="text-xs font-mono text-slate-500 line-through">
+                            {formatPrice(product.originalPrice)}
+                          </div>
+                        )}
+                      </td>
+
+                      <td className="px-6 py-4">
+                        {product.inStock ? (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                            <CheckCircle className="w-3.5 h-3.5" />
+                            <span>In Stock</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-mono font-bold bg-red-500/10 text-red-400 border border-red-500/30">
+                            <XCircle className="w-3.5 h-3.5" />
+                            <span>Out of Stock</span>
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="px-6 py-4">
+                        {product.badge ? (
+                          <span className="px-3 py-1 rounded-lg text-xs font-mono font-bold uppercase tracking-wider bg-gold/10 text-gold border border-gold/30">
+                            {product.badge}
+                          </span>
+                        ) : (
+                          <span className="text-slate-600 text-xs font-mono">—</span>
+                        )}
+                      </td>
+
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleDelete(product.id, product.name)}
+                            disabled={deletingId === product.id}
+                            className="p-2.5 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all border border-transparent hover:border-red-500/20"
+                            title="Delete Product"
+                          >
+                            {deletingId === product.id ? (
+                              <span className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
       </div>
 
-      {/* High-Res Photo Lightbox Modal */}
-      {selectedImage && (
+      {/* Multi-Photo Lightbox Gallery Modal with Next/Prev Carousel Controls */}
+      {activeGallery && (
         <div
           className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-2xl flex items-center justify-center p-4 animate-fade-in"
-          onClick={() => setSelectedImage(null)}
+          onClick={() => setActiveGallery(null)}
         >
           <div
-            className="relative max-w-3xl w-full bg-[#0B0F19] border border-slate-800 rounded-3xl p-6 shadow-2xl overflow-hidden text-center space-y-4"
+            className="relative max-w-4xl w-full bg-[#0B0F19] border border-slate-800 rounded-3xl p-6 shadow-2xl overflow-hidden space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-base font-bold text-white line-clamp-1">{selectedImage.title}</h3>
+              <div>
+                <h3 className="text-base font-bold text-white line-clamp-1">{activeGallery.title}</h3>
+                <p className="text-xs font-mono text-gold">
+                  Photo {activeGallery.currentIndex + 1} of {activeGallery.images.length}
+                </p>
+              </div>
               <button
-                onClick={() => setSelectedImage(null)}
+                onClick={() => setActiveGallery(null)}
                 className="p-2 text-slate-400 hover:text-white bg-slate-900 rounded-xl transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="relative w-full h-96 rounded-2xl overflow-hidden bg-slate-950 border border-slate-800">
-              <Image src={selectedImage.url} alt={selectedImage.title} fill className="object-contain" />
+            {/* Main Carousel Display with Navigation Arrows */}
+            <div className="relative w-full h-[420px] rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 flex items-center justify-center group">
+              <Image
+                src={activeGallery.images[activeGallery.currentIndex]}
+                alt={`${activeGallery.title} - Photo ${activeGallery.currentIndex + 1}`}
+                fill
+                className="object-contain"
+              />
+
+              {activeGallery.images.length > 1 && (
+                <>
+                  <button
+                    onClick={prevPhoto}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-slate-950/80 border border-slate-800 text-white hover:text-gold hover:border-gold/50 transition-all shadow-xl"
+                  >
+                    <ChevronLeft className="w-6 h-6" />
+                  </button>
+
+                  <button
+                    onClick={nextPhoto}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-slate-950/80 border border-slate-800 text-white hover:text-gold hover:border-gold/50 transition-all shadow-xl"
+                  >
+                    <ChevronRight className="w-6 h-6" />
+                  </button>
+                </>
+              )}
             </div>
 
-            <p className="text-xs font-mono text-slate-400">High-Resolution Laptop Studio Photography</p>
+            {/* Bottom Multi-Photo Thumbnail Bar */}
+            {activeGallery.images.length > 1 && (
+              <div className="flex justify-center gap-3 overflow-x-auto py-2">
+                {activeGallery.images.map((img, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveGallery({ ...activeGallery, currentIndex: idx })}
+                    className={`relative w-16 h-14 rounded-xl overflow-hidden shrink-0 border-2 transition-all ${
+                      activeGallery.currentIndex === idx
+                        ? "border-gold scale-105 shadow-lg shadow-gold/20"
+                        : "border-slate-800 opacity-50 hover:opacity-100"
+                    }`}
+                  >
+                    <Image src={img} alt={`Thumbnail ${idx + 1}`} fill className="object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

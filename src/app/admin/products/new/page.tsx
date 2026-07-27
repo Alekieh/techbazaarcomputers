@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft, Save, Plus, Trash2, AlertCircle, Sparkles, Check, Eye } from "lucide-react";
+import { ArrowLeft, Save, Plus, Trash2, AlertCircle, Sparkles, Eye, Image as ImageIcon } from "lucide-react";
 
 export default function NewProductPage() {
   const router = useRouter();
@@ -20,10 +20,18 @@ export default function NewProductPage() {
     originalPrice: "",
     shortDescription: "",
     description: "",
-    image: "/images/products/hp-elitebook-g8.jpg",
     inStock: true,
     badge: "",
   });
+
+  // Multi-image state
+  const [images, setImages] = useState<string[]>([
+    "/images/products/hp-elitebook-g8.jpg",
+    "/images/products/hp-x360-tent.jpg",
+    "/images/products/hp-elitebook.jpg",
+  ]);
+
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   const [specs, setSpecs] = useState([
     { label: "Processor", value: "Intel Core i7 11th Gen" },
@@ -40,6 +48,24 @@ export default function NewProductPage() {
     { label: "ThinkPad Matte Black", url: "/images/products/thinkpad-t490s.jpg" },
     { label: "ThinkPad Yoga 2-in-1", url: "/images/products/thinkpad-x1-yoga.jpg" },
   ];
+
+  const handleAddImage = () => {
+    setImages([...images, "/images/products/hp-elitebook-g8.jpg"]);
+  };
+
+  const handleRemoveImage = (index: number) => {
+    if (images.length <= 1) return;
+    setImages(images.filter((_, i) => i !== index));
+    if (activeImageIndex >= index && activeImageIndex > 0) {
+      setActiveImageIndex(activeImageIndex - 1);
+    }
+  };
+
+  const handleImageChange = (index: number, val: string) => {
+    const updated = [...images];
+    updated[index] = val;
+    setImages(updated);
+  };
 
   const handleAddSpec = () => {
     setSpecs([...specs, { label: "", value: "" }]);
@@ -61,10 +87,13 @@ export default function NewProductPage() {
     setLoading(true);
 
     try {
+      const validImages = images.filter((img) => img.trim().length > 0);
       const payload = {
         ...form,
         price: parseFloat(form.price),
         originalPrice: form.originalPrice ? parseFloat(form.originalPrice) : null,
+        image: validImages[0] || "/images/products/hp-elitebook-g8.jpg",
+        images: validImages.length > 0 ? validImages : ["/images/products/hp-elitebook-g8.jpg"],
         specs: specs.filter((s) => s.label.trim() && s.value.trim()),
       };
 
@@ -113,7 +142,7 @@ export default function NewProductPage() {
             Create Store Product
           </h1>
           <p className="text-slate-400 text-sm">
-            Publish a new tech item live into your Railway PostgreSQL database.
+            Publish a new laptop with multiple high-resolution photos into your Railway PostgreSQL database.
           </p>
         </div>
       </div>
@@ -254,42 +283,82 @@ export default function NewProductPage() {
                 className="w-full px-4 py-3 bg-slate-950/80 border border-slate-800/80 rounded-2xl text-white text-sm focus:outline-none focus:border-gold"
               />
             </div>
+          </div>
 
-            {/* Presets Image Selector */}
-            <div>
+          {/* Section 2: Multi-Photo Management */}
+          <div className="bg-[#0B0F19]/90 border border-slate-800/90 p-6 rounded-3xl space-y-6 shadow-xl backdrop-blur-xl">
+            <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+              <div className="flex items-center gap-2">
+                <ImageIcon className="w-4 h-4 text-gold" />
+                <h3 className="text-base font-bold text-white">
+                  2. Multiple Laptop Photos ({images.length})
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={handleAddImage}
+                className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-gold font-bold rounded-xl text-xs flex items-center gap-1.5 transition-colors border border-gold/30"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add Extra Photo Angle</span>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {images.map((imgUrl, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <span className="text-xs font-mono font-bold text-gold w-16">
+                    Photo {i + 1}
+                  </span>
+                  <input
+                    type="text"
+                    placeholder={`Photo URL #${i + 1}`}
+                    value={imgUrl}
+                    onChange={(e) => handleImageChange(i, e.target.value)}
+                    className="flex-1 px-4 py-3 bg-slate-950/80 border border-slate-800/80 rounded-2xl text-white text-sm font-mono focus:outline-none focus:border-gold"
+                  />
+                  {images.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveImage(i)}
+                      className="p-3 text-slate-500 hover:text-red-400 hover:bg-slate-900 rounded-2xl transition-colors shrink-0"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Quick Presets Picker */}
+            <div className="pt-3 border-t border-slate-800/60">
               <label className="block text-xs font-mono font-bold uppercase tracking-wider text-slate-400 mb-2">
-                Product Image (Select Preset or Paste Custom URL)
+                Quick Studio Presets (Click to add to gallery):
               </label>
-              <input
-                type="text"
-                value={form.image}
-                onChange={(e) => setForm({ ...form, image: e.target.value })}
-                className="w-full px-4 py-3 bg-slate-950/80 border border-slate-800/80 rounded-2xl text-white text-sm font-mono focus:outline-none focus:border-gold mb-3"
-              />
               <div className="flex flex-wrap gap-2">
                 {presetImages.map((preset, i) => (
                   <button
                     key={i}
                     type="button"
-                    onClick={() => setForm({ ...form, image: preset.url })}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
-                      form.image === preset.url
-                        ? "bg-gold text-slate-950 font-bold shadow-md shadow-gold/20"
-                        : "bg-slate-950 border border-slate-800 text-slate-400 hover:text-white"
-                    }`}
+                    onClick={() => {
+                      if (!images.includes(preset.url)) {
+                        setImages([...images, preset.url]);
+                      }
+                    }}
+                    className="px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-950 border border-slate-800 text-slate-400 hover:text-white hover:border-gold transition-colors"
                   >
-                    {preset.label}
+                    + {preset.label}
                   </button>
                 ))}
               </div>
             </div>
           </div>
 
-          {/* Section 2: Technical Specifications */}
+          {/* Section 3: Technical Specifications */}
           <div className="bg-[#0B0F19]/90 border border-slate-800/90 p-6 rounded-3xl space-y-6 shadow-xl backdrop-blur-xl">
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
               <h3 className="text-base font-bold text-white">
-                2. Technical Specifications ({specs.length})
+                3. Technical Specifications ({specs.length})
               </h3>
               <button
                 type="button"
@@ -355,11 +424,11 @@ export default function NewProductPage() {
           </div>
         </form>
 
-        {/* Right Column: Live Storefront Card Preview */}
+        {/* Right Column: Live Storefront Card Preview & Multi-Photo Gallery */}
         <div className="lg:col-span-4 sticky top-24 space-y-4">
           <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider text-slate-400 px-1">
             <Eye className="w-4 h-4 text-gold" />
-            <span>Storefront Preview Card</span>
+            <span>Storefront Multi-Photo Preview</span>
           </div>
 
           <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-2xl relative overflow-hidden group">
@@ -368,18 +437,35 @@ export default function NewProductPage() {
                 {form.badge}
               </span>
             )}
-            
-            <div className="relative w-full h-44 rounded-2xl overflow-hidden bg-slate-100 mb-4">
+
+            {/* Main Preview Image */}
+            <div className="relative w-full h-48 rounded-2xl overflow-hidden bg-slate-100 mb-3 border border-slate-200">
               <Image
-                src={form.image || "/images/products/hp-elitebook-g8.jpg"}
+                src={images[activeImageIndex] || images[0] || "/images/products/hp-elitebook-g8.jpg"}
                 alt={form.name || "Product Preview"}
                 fill
-                className="object-cover group-hover:scale-105 transition-transform duration-500"
+                className="object-cover transition-transform duration-500"
               />
             </div>
 
+            {/* Multi-Photo Thumbnail Bar */}
+            <div className="flex gap-2 overflow-x-auto pb-2 mb-3">
+              {images.map((img, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setActiveImageIndex(idx)}
+                  className={`relative w-12 h-12 rounded-xl overflow-hidden shrink-0 border-2 transition-all ${
+                    activeImageIndex === idx ? "border-gold scale-105 shadow-md" : "border-slate-200 opacity-60 hover:opacity-100"
+                  }`}
+                >
+                  <Image src={img} alt={`Angle ${idx + 1}`} fill className="object-cover" />
+                </button>
+              ))}
+            </div>
+
             <span className="text-[10px] font-bold uppercase tracking-wider text-gold font-mono">
-              {form.brand} • {form.category}
+              {form.brand} • {form.category} • {images.length} Photos
             </span>
 
             <h4 className="text-base font-bold text-slate-900 line-clamp-1 mt-0.5">
