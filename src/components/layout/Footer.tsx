@@ -89,7 +89,6 @@ export default function Footer() {
               <li><Link href="/returns" className="text-sm text-slate-300 hover:text-gold transition-colors">Returns & Warranty</Link></li>
               <li><Link href="/privacy" className="text-sm text-slate-300 hover:text-gold transition-colors">Privacy Policy</Link></li>
               <li><Link href="/terms" className="text-sm text-slate-300 hover:text-gold transition-colors">Terms & Conditions</Link></li>
-              <li><Link href="/admin" className="text-xs text-gold/80 hover:text-gold transition-colors font-semibold">Admin Portal</Link></li>
             </ul>
           </div>
 

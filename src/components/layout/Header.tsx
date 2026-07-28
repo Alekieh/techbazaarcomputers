@@ -137,17 +137,6 @@ export default function Header() {
                         <p className="text-[10px] text-slate-400 font-mono line-clamp-1">{currentUser.email}</p>
                       </div>
 
-                      {currentUser.role === "ADMIN" && (
-                        <Link
-                          href="/admin"
-                          onClick={() => setUserDropdownOpen(false)}
-                          className="flex items-center gap-2 px-4 py-2 text-gold hover:bg-slate-900 font-bold"
-                        >
-                          <ShieldCheck className="w-4 h-4 text-gold" />
-                          <span>Admin Command Portal</span>
-                        </Link>
-                      )}
-
                       <Link
                         href="/account/orders"
                         onClick={() => setUserDropdownOpen(false)}
