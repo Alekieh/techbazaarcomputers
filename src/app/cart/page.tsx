@@ -67,10 +67,10 @@ export default function CartPage() {
               </div>
               <div>
                 <h1 className="text-3xl font-black text-white tracking-tight">
-                  Jumia-Style Shopping Cart ({items.reduce((a, b) => a + b.quantity, 0)})
+                  Shopping Cart ({items.reduce((a, b) => a + b.quantity, 0)})
                 </h1>
                 <p className="text-slate-400 text-xs mt-0.5">
-                  Review laptop items, apply vouchers, and proceed to M-Pesa checkout.
+                  Review your laptops and tech gear, apply promo vouchers, and proceed to M-Pesa checkout.
                 </p>
               </div>
             </div>
@@ -107,7 +107,7 @@ export default function CartPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             {/* Left Column: Cart Items List & Delivery Meter */}
             <div className="lg:col-span-8 space-y-6">
-              {/* Jumia Free Delivery Meter Bar */}
+              {/* Tech Bazaar Free Delivery Meter Bar */}
               <div className="bg-[#0B0F19] border border-slate-800/90 rounded-3xl p-5 space-y-3">
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-mono font-bold text-slate-300 flex items-center gap-2">
@@ -160,7 +160,7 @@ export default function CartPage() {
                           </span>
                           <span className="inline-flex items-center gap-1 text-[11px] font-mono text-slate-400 bg-slate-900 px-2 py-0.5 rounded-md border border-slate-800">
                             <ShieldCheck className="w-3 h-3 text-gold" />
-                            1-Yr Warranty
+                            1-Yr Tech Bazaar Warranty
                           </span>
                         </div>
                       </div>
@@ -220,12 +220,12 @@ export default function CartPage() {
               </div>
             </div>
 
-            {/* Right Column: Jumia Order Summary Sidebar */}
+            {/* Right Column: Tech Bazaar Order Summary Sidebar */}
             <div className="lg:col-span-4 sticky top-24 space-y-6">
               <div className="bg-[#0B0F19] border border-slate-800/90 rounded-3xl p-6 shadow-2xl space-y-6">
                 <h3 className="text-base font-bold text-white border-b border-slate-800/80 pb-3 flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-gold" />
-                  <span>Jumia Order Summary</span>
+                  <span>Order Summary</span>
                 </h3>
 
                 {/* Voucher Input */}

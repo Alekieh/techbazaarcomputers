@@ -72,10 +72,10 @@ export default function CustomerOrdersPage() {
             </div>
             <div>
               <h1 className="text-3xl font-black text-white tracking-tight">
-                Jumia-Style Purchase Tracking ({orders.length})
+                Order Tracking & Purchase History ({orders.length})
               </h1>
               <p className="text-slate-400 text-xs mt-0.5">
-                Live order status timeline, Safaricom M-Pesa receipts, and G4S courier tracking IDs.
+                Live delivery progress timeline, Safaricom M-Pesa receipts, and G4S courier tracking IDs.
               </p>
             </div>
           </div>
@@ -93,7 +93,7 @@ export default function CustomerOrdersPage() {
             <ShoppingBag className="w-16 h-16 mx-auto text-slate-700 opacity-40 animate-pulse" />
             <h3 className="text-xl font-bold text-white">No Purchase History Found</h3>
             <p className="text-xs text-slate-400 max-w-sm mx-auto">
-              When you buy a laptop, your live Jumia-style order timeline and G4S courier tracking info will appear here.
+              When you buy a laptop, your live order timeline and G4S courier tracking info will appear here.
             </p>
             <Link
               href="/products"
@@ -150,10 +150,10 @@ export default function CustomerOrdersPage() {
                     </div>
                   </div>
 
-                  {/* Jumia-Style Order Stepper Tracker Bar */}
+                  {/* Order Stepper Tracker Bar */}
                   <div className="bg-slate-950/80 border border-slate-800 rounded-3xl p-6 space-y-4">
                     <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">
-                      Live Delivery Stepper Status:
+                      Live Delivery Progress Stepper:
                     </h4>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 relative">
