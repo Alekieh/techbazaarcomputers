@@ -131,9 +131,14 @@ export default function CheckoutPage() {
 
           <p className="text-sm text-slate-600 mb-2">Thank you for shopping with Tech Bazaar.</p>
           <p className="text-xs text-slate-500 mb-8">We will contact you on <span className="font-semibold text-slate-900">{contactInfo.phone}</span> to confirm delivery.</p>
-          <Link href="/products">
-            <Button variant="primary" size="lg" fullWidth>Continue Shopping</Button>
-          </Link>
+          <div className="space-y-3">
+            <Link href={`/account/orders?search=${orderNumber}`}>
+              <Button variant="primary" size="lg" fullWidth>Track Order Progress Live</Button>
+            </Link>
+            <Link href="/products" className="block text-center text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors pt-2">
+              Continue Shopping
+            </Link>
+          </div>
         </div>
       </main>
     );

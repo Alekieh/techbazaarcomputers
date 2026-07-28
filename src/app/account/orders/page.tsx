@@ -1,34 +1,48 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { useCart } from "@/components/cart/CartProvider";
-import { ShoppingBag, ArrowLeft, Clock, Truck, CheckCircle2, MapPin, DollarSign, Smartphone, ExternalLink, Printer, RotateCcw, PackageCheck } from "lucide-react";
+import { ShoppingBag, ArrowLeft, Search, Truck, CheckCircle2, MapPin, Printer, RotateCcw, PackageCheck, AlertCircle } from "lucide-react";
 
-export default function CustomerOrdersPage() {
+function OrderTrackingContent() {
+  const searchParams = useSearchParams();
+  const initialQuery = searchParams.get("search") || searchParams.get("query") || "";
+
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searched, setSearched] = useState(false);
   const { addToCart } = useCart();
 
-  useEffect(() => {
-    async function fetchUserOrders() {
-      setLoading(true);
-      try {
-        const res = await fetch("/api/user/orders");
-        const data = await res.json();
-        if (res.ok) {
-          setOrders(data.orders || []);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
+  const fetchOrders = async (queryToFetch?: string) => {
+    setLoading(true);
+    try {
+      const q = queryToFetch !== undefined ? queryToFetch : searchQuery;
+      const url = q.trim() ? `/api/user/orders?query=${encodeURIComponent(q.trim())}` : "/api/user/orders";
+      const res = await fetch(url);
+      const data = await res.json();
+      if (res.ok) {
+        setOrders(data.orders || []);
       }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+      setSearched(true);
     }
+  };
 
-    fetchUserOrders();
-  }, []);
+  useEffect(() => {
+    fetchOrders(initialQuery);
+  }, [initialQuery]);
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    fetchOrders(searchQuery);
+  };
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-KE", {
@@ -72,34 +86,62 @@ export default function CustomerOrdersPage() {
             </div>
             <div>
               <h1 className="text-3xl font-black text-white tracking-tight">
-                Order Tracking & Purchase History ({orders.length})
+                Track Order & Purchase History
               </h1>
               <p className="text-slate-400 text-xs mt-0.5">
-                Live delivery progress timeline, Safaricom M-Pesa receipts, and G4S courier tracking IDs.
+                Check live delivery progress timeline, M-Pesa receipts, and G4S courier tracking IDs.
               </p>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        {/* Instant Order Lookup Box */}
+        <div className="bg-[#0B0F19] border border-slate-800/90 rounded-3xl p-6 shadow-2xl space-y-4">
+          <h3 className="text-sm font-bold text-white flex items-center gap-2">
+            <Search className="w-4 h-4 text-gold" />
+            <span>Search & Track Any Order</span>
+          </h3>
+          <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <input
+                type="text"
+                placeholder="Enter Order Number (e.g. TB-1042), Phone Number (0712345678), or M-Pesa Code"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full px-4 py-3.5 bg-slate-950 border border-slate-800 rounded-2xl text-white text-sm font-mono focus:outline-none focus:border-gold"
+              />
+            </div>
+            <button
+              type="submit"
+              className="px-6 py-3.5 bg-gold text-slate-950 font-black rounded-2xl text-xs font-mono uppercase tracking-wider hover:bg-amber-400 transition-colors shadow-md"
+            >
+              Track Order Live
+            </button>
+          </form>
+        </div>
+
+        {/* Results Container */}
         {loading ? (
-          <div className="py-20 text-center text-slate-400 flex flex-col items-center justify-center gap-3">
+          <div className="py-16 text-center text-slate-400 flex flex-col items-center justify-center gap-3">
             <div className="w-9 h-9 border-4 border-gold border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm font-mono">Loading purchase tracking records...</p>
+            <p className="text-sm font-mono">Fetching live order progress from database...</p>
           </div>
         ) : orders.length === 0 ? (
-          <div className="bg-[#0B0F19]/90 border border-slate-800/90 rounded-3xl p-16 text-center text-slate-500 space-y-4">
+          <div className="bg-[#0B0F19]/90 border border-slate-800/90 rounded-3xl p-14 text-center text-slate-500 space-y-4">
             <ShoppingBag className="w-16 h-16 mx-auto text-slate-700 opacity-40 animate-pulse" />
-            <h3 className="text-xl font-bold text-white">No Purchase History Found</h3>
-            <p className="text-xs text-slate-400 max-w-sm mx-auto">
-              When you buy a laptop, your live order timeline and G4S courier tracking info will appear here.
+            <h3 className="text-xl font-bold text-white">No Matching Orders Found</h3>
+            <p className="text-xs text-slate-400 max-w-md mx-auto">
+              {searched && searchQuery
+                ? `No order matched "${searchQuery}". Please check your Order Number (e.g. TB-1042) or Phone Number and try again.`
+                : "Type your Order Number or Phone Number above to track your order progress timeline live."}
             </p>
             <Link
               href="/products"
-              className="inline-block px-8 py-4 bg-gold text-slate-950 font-black text-sm rounded-2xl shadow-lg shadow-gold/20 hover:scale-105 transition-transform"
+              className="inline-block px-8 py-3.5 bg-gold text-slate-950 font-black text-xs rounded-2xl shadow-lg shadow-gold/20 hover:scale-105 transition-transform"
             >
-              Browse Laptop Catalog
+              Browse Laptops Storefront
             </Link>
           </div>
         ) : (
@@ -116,11 +158,11 @@ export default function CustomerOrdersPage() {
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
                     <div>
                       <div className="flex items-center gap-3">
-                        <span className="font-mono text-xl font-black text-gold">
+                        <span className="font-mono text-2xl font-black text-gold">
                           {order.orderNumber}
                         </span>
                         <span className="text-xs font-mono text-slate-400">
-                          {new Date(order.createdAt).toLocaleDateString("en-KE", {
+                          Placing Date: {new Date(order.createdAt).toLocaleDateString("en-KE", {
                             day: "numeric",
                             month: "short",
                             year: "numeric",
@@ -150,10 +192,10 @@ export default function CustomerOrdersPage() {
                     </div>
                   </div>
 
-                  {/* Order Stepper Tracker Bar */}
+                  {/* Live Order Progress Stepper Bar */}
                   <div className="bg-slate-950/80 border border-slate-800 rounded-3xl p-6 space-y-4">
                     <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">
-                      Live Delivery Progress Stepper:
+                      Live Delivery Progress Timeline:
                     </h4>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 relative">
@@ -227,12 +269,12 @@ export default function CustomerOrdersPage() {
                     </div>
                   </div>
 
-                  {/* Logistics & Price Summary Grid */}
+                  {/* Address & Tracking Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
                     <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800/80 space-y-1">
                       <span className="font-mono font-bold uppercase tracking-wider text-slate-400 block mb-1 flex items-center gap-1.5">
                         <MapPin className="w-3.5 h-3.5 text-gold" />
-                        <span>Delivery Address</span>
+                        <span>Delivery Details</span>
                       </span>
                       <p className="font-bold text-white text-sm">{order.customerName}</p>
                       <p className="text-slate-400">{order.customerPhone}</p>
@@ -264,7 +306,7 @@ export default function CustomerOrdersPage() {
 
                     <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800/80 flex flex-col justify-between">
                       <span className="font-mono font-bold uppercase tracking-wider text-slate-400 text-[10px]">
-                        Total Amount Paid
+                        Total Order Amount
                       </span>
                       <span className="text-2xl font-black text-gold font-mono">
                         {formatPrice(order.total)}
@@ -272,7 +314,7 @@ export default function CustomerOrdersPage() {
                     </div>
                   </div>
 
-                  {/* Items List Table */}
+                  {/* Items Purchased List */}
                   <div className="bg-slate-950/60 rounded-2xl border border-slate-800/80 overflow-hidden">
                     <table className="w-full text-left text-xs">
                       <thead className="bg-slate-950 text-slate-400 font-mono uppercase tracking-wider font-bold border-b border-slate-800">
@@ -324,5 +366,17 @@ export default function CustomerOrdersPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function CustomerOrdersPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-gold font-mono">
+        Loading Order Tracking...
+      </div>
+    }>
+      <OrderTrackingContent />
+    </Suspense>
   );
 }
