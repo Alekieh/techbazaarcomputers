@@ -18,6 +18,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Images,
+  Pencil,
 } from "lucide-react";
 
 export default function AdminProductsPage() {
@@ -285,6 +286,13 @@ export default function AdminProductsPage() {
 
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
+                          <Link
+                            href={`/admin/products/${product.id}`}
+                            className="p-2.5 text-slate-400 hover:text-gold hover:bg-gold/10 rounded-xl transition-all border border-transparent hover:border-gold/20"
+                            title="Edit Product & Photos"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Link>
                           <button
                             onClick={() => handleDelete(product.id, product.name)}
                             disabled={deletingId === product.id}
