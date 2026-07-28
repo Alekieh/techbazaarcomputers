@@ -519,7 +519,11 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             {/* Main Preview Image */}
             <div className="relative w-full h-48 rounded-2xl overflow-hidden bg-slate-100 mb-3 border border-slate-200">
               <Image
-                src={images[activeImageIndex] || images[0] || "/images/products/hp-elitebook-g8.jpg"}
+                src={
+                  (images[activeImageIndex] && images[activeImageIndex].trim()) ||
+                  images.find((i) => i && i.trim().length > 0) ||
+                  "/images/products/hp-elitebook-g8.jpg"
+                }
                 alt={form.name || "Product Preview"}
                 fill
                 className="object-cover transition-transform duration-500"
@@ -537,7 +541,12 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                     activeImageIndex === idx ? "border-gold scale-105 shadow-md" : "border-slate-200 opacity-60 hover:opacity-100"
                   }`}
                 >
-                  <Image src={img} alt={`Angle ${idx + 1}`} fill className="object-cover" />
+                  <Image
+                    src={img && img.trim() ? img.trim() : "/images/products/hp-elitebook-g8.jpg"}
+                    alt={`Angle ${idx + 1}`}
+                    fill
+                    className="object-cover"
+                  />
                 </button>
               ))}
             </div>

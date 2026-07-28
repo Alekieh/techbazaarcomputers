@@ -147,10 +147,10 @@ export function CloudinaryImageUploader({
       </div>
 
       {/* Image Preview Box */}
-      {preview && (
+      {Boolean(preview && preview.trim()) && (
         <div className="relative w-full h-40 rounded-2xl bg-slate-950 border border-slate-800 overflow-hidden group">
           <Image
-            src={preview}
+            src={preview || "/images/products/hp-elitebook-g8.jpg"}
             alt="Uploaded Preview"
             fill
             className="object-contain"
