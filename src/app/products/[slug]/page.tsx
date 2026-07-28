@@ -1,260 +1,250 @@
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { getProductBySlug, getProductsByCategory, formatPrice, Product } from '@/data/products';
-import { categories } from '@/data/categories';
+import Image from 'next/image';
+import { getProductBySlug, formatPrice, Product } from '@/data/products';
 import { ProductCard } from '@/components/ui/ProductCard';
-import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
 import { useCart } from '@/components/cart/CartProvider';
+import { useWishlist } from '@/components/wishlist/WishlistProvider';
+import { ShoppingBag, Heart, ShieldCheck, Truck, ArrowLeft, Star, CheckCircle2, RotateCcw } from 'lucide-react';
 
 export default function ProductDetailPage() {
   const params = useParams();
   const slug = params.slug as string;
-  const product = getProductBySlug(slug);
   const { addToCart } = useCart();
-  
+  const { toggleWishlist, isWishlisted } = useWishlist();
+
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    async function fetchLiveProduct() {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/products/${slug}`);
+        const data = await res.json();
+        if (res.ok && data.product) {
+          setProduct(data.product);
+
+          // Fetch related category products
+          const catRes = await fetch(`/api/products?category=${data.product.category}`);
+          const catData = await catRes.json();
+          if (catRes.ok && catData.products) {
+            setRelatedProducts(
+              catData.products.filter((p: any) => p.id !== data.product.id).slice(0, 4)
+            );
+          }
+        } else {
+          // Fallback to static data
+          const fallback = getProductBySlug(slug);
+          if (fallback) setProduct(fallback);
+        }
+      } catch (err) {
+        const fallback = getProductBySlug(slug);
+        if (fallback) setProduct(fallback);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchLiveProduct();
+  }, [slug]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-gold font-mono gap-3">
+        <div className="w-10 h-10 border-4 border-gold border-t-transparent rounded-full animate-spin" />
+        <p className="text-xs">Loading Live Laptop Details from Database...</p>
+      </div>
+    );
+  }
 
   if (!product) {
     return (
-      <div className="min-h-[70vh] bg-dark-900 flex flex-col items-center justify-center px-4">
-        <h1 className="text-6xl font-bold text-dark-700 mb-4">404</h1>
-        <h2 className="text-2xl font-bold text-dark-50 mb-6">Product not found</h2>
-        <p className="text-dark-300 mb-8 max-w-md text-center">
-          The product you are looking for doesn't exist or has been removed.
+      <div className="min-h-[70vh] bg-slate-950 flex flex-col items-center justify-center px-4 text-center">
+        <h1 className="text-6xl font-bold text-slate-700 mb-4">404</h1>
+        <h2 className="text-2xl font-bold text-white mb-6">Product Not Found</h2>
+        <p className="text-slate-400 mb-8 max-w-md text-xs">
+          The product you are looking for doesn't exist or has been removed from PostgreSQL database.
         </p>
         <Link href="/products">
-          <Button variant="primary">Back to Products</Button>
+          <button className="px-6 py-3 bg-gold text-slate-950 font-bold text-xs rounded-2xl shadow-lg">
+            Back to Products Catalog
+          </button>
         </Link>
       </div>
     );
   }
 
-  const category = categories.find(c => c.id === product.category);
-  const relatedProducts = getProductsByCategory(product.category)
-    .filter(p => p.id !== product.id)
-    .slice(0, 4);
+  const galleryImages = (product as any).images && (product as any).images.length > 0
+    ? (product as any).images.filter((img: string) => img && img.trim().length > 0)
+    : [product.image];
 
-  const incrementQuantity = () => setQuantity(prev => Math.min(prev + 1, 10));
-  const decrementQuantity = () => setQuantity(prev => Math.max(prev - 1, 1));
-
-  const handleAddToCart = () => {
-    // Assuming addToCart can take quantity, if not it will just add one, 
-    // but the prompt suggests passing quantity.
-    addToCart(product, quantity);
-  };
+  const currentMainImage = galleryImages[activeImageIndex] || product.image;
 
   return (
-    <div className="min-h-screen bg-dark-900 pb-16">
-      {/* Breadcrumb */}
-      <div className="border-b border-dark-700 bg-dark-900/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <nav className="text-sm flex items-center gap-2 overflow-x-auto whitespace-nowrap custom-scrollbar pb-1 sm:pb-0">
-            <Link href="/" className="text-dark-400 hover:text-gold transition-colors">Home</Link>
-            <span className="text-dark-600">&gt;</span>
-            <Link href="/products" className="text-dark-400 hover:text-gold transition-colors">Products</Link>
-            <span className="text-dark-600">&gt;</span>
-            <Link href={`/products?category=${product.category}`} className="text-dark-400 hover:text-gold transition-colors">
-              {category?.name || 'Category'}
-            </Link>
-            <span className="text-dark-600">&gt;</span>
-            <span className="text-gold font-medium truncate">{product.name}</span>
-          </nav>
+    <div className="min-h-screen bg-slate-950 text-white pb-20 selection:bg-gold selection:text-slate-950 font-sans">
+      {/* Header Breadcrumb */}
+      <div className="bg-[#0B0F19] border-b border-slate-800/80 py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+          <Link
+            href="/products"
+            className="inline-flex items-center gap-2 text-xs font-mono font-bold text-slate-400 hover:text-gold transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Back to Products</span>
+          </Link>
+          <span className="text-xs font-mono text-gold uppercase tracking-wider font-bold">
+            {product.brand} • {product.category}
+          </span>
         </div>
       </div>
 
-      {/* Product Section */}
-      <section className="py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
           
-          {/* Left: Product Image */}
-          <div className="animate-fade-in relative aspect-square bg-dark-800 rounded-2xl overflow-hidden border border-dark-700 flex items-center justify-center group">
-            <div className="absolute inset-0 bg-gradient-to-br from-dark-800 to-dark-900 opacity-50 group-hover:opacity-70 transition-opacity"></div>
-            <span className="text-8xl font-bold text-dark-600 z-10 select-none transform group-hover:scale-110 transition-transform duration-500">
-              {product.brand.charAt(0)}
-            </span>
-            {product.badge && (
-              <div className="absolute top-4 left-4 z-20">
-                <Badge variant={product.badge}>
+          {/* Left Column: Multi-Photo Gallery Lightbox */}
+          <div className="lg:col-span-6 space-y-4">
+            <div className="relative w-full h-[400px] sm:h-[480px] bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl group">
+              {product.badge && (
+                <span className="absolute top-4 right-4 z-10 px-3 py-1 bg-gold text-slate-950 text-[10px] font-black uppercase rounded-full shadow-md">
                   {product.badge}
-                </Badge>
+                </span>
+              )}
+              <Image
+                src={currentMainImage || "/images/products/hp-elitebook-g8.jpg"}
+                alt={product.name}
+                fill
+                className="object-cover transition-all duration-500"
+              />
+            </div>
+
+            {/* Thumbnail Multi-Angle Selector */}
+            {galleryImages.length > 1 && (
+              <div className="flex gap-3 overflow-x-auto pb-2">
+                {galleryImages.map((img: string, idx: number) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setActiveImageIndex(idx)}
+                    className={`relative w-20 h-20 rounded-2xl overflow-hidden shrink-0 border-2 transition-all ${
+                      activeImageIndex === idx
+                        ? "border-gold scale-105 shadow-lg shadow-gold/20"
+                        : "border-slate-800 opacity-60 hover:opacity-100"
+                    }`}
+                  >
+                    <Image
+                      src={img || "/images/products/hp-elitebook-g8.jpg"}
+                      alt={`${product.name} Angle ${idx + 1}`}
+                      fill
+                      className="object-cover"
+                    />
+                  </button>
+                ))}
               </div>
             )}
           </div>
 
-          {/* Right: Product Info */}
-          <div className="animate-slide-in-right flex flex-col justify-center">
-            <span className="text-sm text-gold font-semibold uppercase tracking-wider mb-2 block">
-              {product.brand}
-            </span>
-            <h1 className="text-3xl md:text-4xl font-bold text-dark-50 leading-tight">
-              {product.name}
-            </h1>
-            
-            {/* Rating */}
-            <div className="flex items-center gap-2 mt-4">
-              <div className="flex text-gold">
-                {[...Array(5)].map((_, i) => (
-                  <svg key={i} className={`w-5 h-5 ${i < Math.floor(product.rating) ? 'fill-current' : 'text-dark-600'}`} viewBox="0 0 20 20">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                ))}
-              </div>
-              <span className="text-sm text-dark-400">({product.reviewCount || 0} reviews)</span>
-            </div>
-
-            {/* Price Block */}
-            <div className="mt-6 flex items-end gap-3">
-              <span className="text-4xl font-bold text-gold">{formatPrice(product.price)}</span>
-              {product.originalPrice && (
-                <>
-                  <span className="text-xl text-dark-400 line-through mb-1">{formatPrice(product.originalPrice)}</span>
-                  <Badge variant="sale" className="mb-2">
-                    -{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%
-                  </Badge>
-                </>
-              )}
-            </div>
-
-            {/* Stock Status */}
-            <div className="mt-4 flex items-center gap-2">
-              <span className={`w-2 h-2 rounded-full ${product.inStock ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]'}`}></span>
-              <span className={`text-sm font-medium ${product.inStock ? 'text-green-400' : 'text-red-400'}`}>
-                {product.inStock ? 'In Stock & Ready to Ship' : 'Out of Stock'}
+          {/* Right Column: Specifications & Add to Cart */}
+          <div className="lg:col-span-6 space-y-6">
+            <div className="space-y-2">
+              <span className="text-xs font-mono font-bold text-gold uppercase tracking-widest">
+                Official {product.brand} Laptop
               </span>
-            </div>
+              <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight leading-tight">
+                {product.name}
+              </h1>
 
-            <p className="mt-6 text-dark-300 leading-relaxed">
-              {product.description}
-            </p>
-
-            {/* Actions */}
-            <div className="mt-8 border-t border-dark-700 pt-8">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                <div className="flex items-center gap-3">
-                  <span className="text-sm text-dark-400 mr-2">Quantity</span>
-                  <div className="flex items-center gap-2">
-                    <button 
-                      onClick={decrementQuantity}
-                      disabled={quantity <= 1 || !product.inStock}
-                      className="w-10 h-10 rounded-lg bg-dark-800 border border-dark-600 flex items-center justify-center text-dark-100 hover:border-gold hover:text-gold transition-colors disabled:opacity-50 disabled:hover:border-dark-600 disabled:hover:text-dark-100"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-                      </svg>
-                    </button>
-                    <div className="w-12 text-center text-lg font-semibold text-dark-50">
-                      {quantity}
-                    </div>
-                    <button 
-                      onClick={incrementQuantity}
-                      disabled={!product.inStock}
-                      className="w-10 h-10 rounded-lg bg-dark-800 border border-dark-600 flex items-center justify-center text-dark-100 hover:border-gold hover:text-gold transition-colors disabled:opacity-50 disabled:hover:border-dark-600 disabled:hover:text-dark-100"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                      </svg>
-                    </button>
-                  </div>
+              <div className="flex items-center gap-4 text-xs pt-1">
+                <div className="flex items-center gap-1 text-amber-400">
+                  <Star className="w-4 h-4 fill-amber-400" />
+                  <span className="font-bold text-white">{product.rating || "4.9"}</span>
+                  <span className="text-slate-400">({(product as any).reviewsCount || product.reviewCount || 24} Reviews)</span>
                 </div>
-
-                <Button 
-                  variant="primary" 
-                  size="lg"
-                  className="w-full sm:flex-1 h-12 shadow-[0_0_20px_rgba(218,160,23,0.2)]"
-                  disabled={!product.inStock}
-                  onClick={handleAddToCart}
-                >
-                  <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                  {product.inStock ? 'Add to Cart' : 'Out of Stock'}
-                </Button>
+                <span className="text-slate-700">•</span>
+                <span className="text-emerald-400 font-mono font-bold flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  In Stock — Available in Nairobi Store
+                </span>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Details Bottom Section */}
-        <div className="mt-16 grid grid-cols-1 lg:grid-cols-3 gap-12">
-          
-          {/* Specifications */}
-          <div className="lg:col-span-2 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-            <h2 className="text-xl font-semibold text-dark-50 flex items-center gap-2">
-              <svg className="w-5 h-5 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              Specifications
-            </h2>
-            <div className="w-full mt-6 rounded-xl border border-dark-700 overflow-hidden glass">
-              <table className="w-full">
-                <tbody>
-                  {product.specs && product.specs.map((spec, index) => (
-                    <tr key={spec.label} className={index % 2 === 0 ? 'bg-dark-800/50' : 'bg-transparent'}>
-                      <td className="px-6 py-4 text-sm text-dark-300 font-medium w-1/3 border-r border-dark-700/50">{spec.label}</td>
-                      <td className="px-6 py-4 text-sm text-dark-100">{spec.value}</td>
-                    </tr>
+            {/* Price Box */}
+            <div className="bg-[#0B0F19] border border-slate-800 rounded-3xl p-6 space-y-2">
+              <div className="flex items-baseline gap-3">
+                <span className="text-3xl sm:text-4xl font-black text-gold font-mono">
+                  {formatPrice(product.price)}
+                </span>
+                {product.originalPrice && (
+                  <span className="text-base text-slate-500 line-through font-mono">
+                    {formatPrice(product.originalPrice)}
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-slate-400 font-mono">
+                Price includes 16% VAT and 1-Year Tech Bazaar Kenya Warranty.
+              </p>
+            </div>
+
+            {/* Product Description */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">
+                Overview & Features
+              </h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                {product.description}
+              </p>
+            </div>
+
+            {/* Specifications Table */}
+            {product.specs && Object.keys(product.specs).length > 0 && (
+              <div className="bg-[#0B0F19] border border-slate-800 rounded-3xl p-6 space-y-3">
+                <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-gold">
+                  Technical Specifications
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  {Object.entries(product.specs).map(([key, value]) => (
+                    <div key={key} className="bg-slate-950 p-3 rounded-2xl border border-slate-800/80">
+                      <span className="text-[10px] font-mono text-slate-500 uppercase block">
+                        {key}
+                      </span>
+                      <span className="font-bold text-white mt-0.5 block">{String(value)}</span>
+                    </div>
                   ))}
-                  {(!product.specs || product.specs.length === 0) && (
-                    <tr>
-                      <td className="px-6 py-8 text-center text-dark-400" colSpan={2}>
-                        Detailed specifications are currently unavailable for this product.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row items-center gap-4 pt-4 border-t border-slate-800">
+              <button
+                onClick={() => addToCart(product, quantity)}
+                className="w-full sm:flex-1 py-4 bg-gradient-to-r from-gold via-amber-400 to-gold text-slate-950 font-black rounded-2xl text-sm flex items-center justify-center gap-2 shadow-xl shadow-gold/20 hover:scale-[1.02] transition-all"
+              >
+                <ShoppingBag className="w-4 h-4" />
+                <span>ADD TO CART NOW</span>
+              </button>
+
+              <button
+                onClick={() => toggleWishlist(product.id)}
+                className={`p-4 rounded-2xl border transition-all ${
+                  isWishlisted(product.id)
+                    ? "bg-red-500/10 text-red-400 border-red-500/30"
+                    : "bg-slate-950 text-slate-400 border-slate-800 hover:text-white"
+                }`}
+                title="Save to Wishlist"
+              >
+                <Heart className="w-5 h-5" />
+              </button>
             </div>
           </div>
-
-          {/* Key Features */}
-          <div className="animate-slide-up" style={{ animationDelay: '0.2s' }}>
-            <h2 className="text-xl font-semibold text-dark-50 flex items-center gap-2">
-              <svg className="w-5 h-5 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-              </svg>
-              Key Features
-            </h2>
-            <ul className="mt-6 space-y-4">
-              {product.features && product.features.length > 0 ? (
-                product.features.map((feature, idx) => (
-                  <li key={idx} className="flex items-start gap-3 glass p-4 rounded-xl border border-dark-700/50 hover:border-gold/30 transition-colors">
-                    <svg className="w-5 h-5 text-gold shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span className="text-sm text-dark-300 leading-relaxed">{feature}</span>
-                  </li>
-                ))
-              ) : (
-                <div className="glass p-6 rounded-xl border border-dark-700/50 text-center text-dark-400 text-sm">
-                  Feature highlights coming soon.
-                </div>
-              )}
-            </ul>
-          </div>
         </div>
-      </section>
-
-      {/* Related Products */}
-      {relatedProducts.length > 0 && (
-        <section className="mt-16 pt-16 border-t border-dark-700 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl font-bold text-dark-50 mb-8 flex items-center gap-2">
-            You May Also Like
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {relatedProducts.map(relatedProduct => (
-              <ProductCard 
-                key={relatedProduct.id} 
-                product={relatedProduct} 
-                onAddToCart={() => addToCart(relatedProduct, 1)} 
-              />
-            ))}
-          </div>
-        </section>
-      )}
+      </div>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo, Suspense } from 'react';
-import { products, formatPrice, Product } from '@/data/products';
+import { useState, useMemo, useEffect, Suspense } from 'react';
+import { products as staticProducts, formatPrice, Product } from '@/data/products';
 import { categories } from '@/data/categories';
 import { ProductCard } from '@/components/ui/ProductCard';
 import { Button } from '@/components/ui/Button';
@@ -15,6 +15,10 @@ function ProductsCatalog() {
 
   const { addToCart } = useCart();
   
+  // Live products state from Railway PostgreSQL
+  const [productsList, setProductsList] = useState<Product[]>(staticProducts);
+  const [loading, setLoading] = useState(true);
+
   // State
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [priceRange, setPriceRange] = useState('All');
@@ -23,11 +27,30 @@ function ProductsCatalog() {
   const [sortBy, setSortBy] = useState('Featured');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
+  // Fetch live products from API
+  useEffect(() => {
+    async function fetchLiveProducts() {
+      try {
+        const res = await fetch("/api/products");
+        const data = await res.json();
+        if (res.ok && data.products && data.products.length > 0) {
+          setProductsList(data.products);
+        }
+      } catch (err) {
+        console.error("Error loading live products:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchLiveProducts();
+  }, []);
+
   // Derived data
   const uniqueBrands = useMemo(() => {
-    const brands = products.map(p => p.brand);
+    const brands = productsList.map(p => p.brand);
     return Array.from(new Set(brands)).sort();
-  }, []);
+  }, [productsList]);
 
   const priceRanges = [
     'All',
@@ -47,7 +70,7 @@ function ProductsCatalog() {
 
   // Filtering
   const filteredProducts = useMemo(() => {
-    return products.filter(product => {
+    return productsList.filter(product => {
       // Category filter
       if (selectedCategory !== 'all' && product.category !== selectedCategory) return false;
       
@@ -59,265 +82,243 @@ function ProductsCatalog() {
       
       // Price filter
       if (priceRange !== 'All') {
-        const price = product.price;
-        if (priceRange === 'Under KSh 25,000' && price >= 25000) return false;
-        if (priceRange === 'KSh 25,000 - 50,000' && (price < 25000 || price > 50000)) return false;
-        if (priceRange === 'KSh 50,000 - 100,000' && (price < 50000 || price > 100000)) return false;
-        if (priceRange === 'Over KSh 100,000' && price <= 100000) return false;
+        if (priceRange === 'Under KSh 25,000' && product.price >= 25000) return false;
+        if (priceRange === 'KSh 25,000 - 50,000' && (product.price < 25000 || product.price > 50000)) return false;
+        if (priceRange === 'KSh 50,000 - 100,000' && (product.price < 50000 || product.price > 100000)) return false;
+        if (priceRange === 'Over KSh 100,000' && product.price <= 100000) return false;
       }
-      
+
       return true;
     });
-  }, [selectedCategory, selectedBrands, inStockOnly, priceRange]);
+  }, [productsList, selectedCategory, selectedBrands, inStockOnly, priceRange]);
 
   // Sorting
   const sortedProducts = useMemo(() => {
-    const sorted = [...filteredProducts];
+    const result = [...filteredProducts];
+    
     switch (sortBy) {
       case 'Price: Low to High':
-        return sorted.sort((a, b) => a.price - b.price);
+        return result.sort((a, b) => a.price - b.price);
       case 'Price: High to Low':
-        return sorted.sort((a, b) => b.price - a.price);
+        return result.sort((a, b) => b.price - a.price);
       case 'Newest':
-        return sorted.sort((a, b) => {
-          const isNewA = a.badge === 'new';
-          const isNewB = b.badge === 'new';
-          return isNewB === isNewA ? 0 : isNewB ? 1 : -1;
-        });
+        return result;
       case 'Name A-Z':
-        return sorted.sort((a, b) => a.name.localeCompare(b.name));
-      case 'Featured':
+        return result.sort((a, b) => a.name.localeCompare(b.name));
       default:
-        return sorted.sort((a, b) => {
-          const isFeaturedA = a.badge === 'bestseller';
-          const isFeaturedB = b.badge === 'bestseller';
-          return isFeaturedB === isFeaturedA ? 0 : isFeaturedB ? 1 : -1;
-        });
+        return result;
     }
   }, [filteredProducts, sortBy]);
 
-  const toggleBrand = (brand: string) => {
+  const handleBrandToggle = (brand: string) => {
     setSelectedBrands(prev => 
-      prev.includes(brand) 
+      prev.includes(brand)
         ? prev.filter(b => b !== brand)
         : [...prev, brand]
     );
   };
 
-  const clearFilters = () => {
+  const clearAllFilters = () => {
     setSelectedCategory('all');
     setPriceRange('All');
     setSelectedBrands([]);
     setInStockOnly(false);
+    setSortBy('Featured');
   };
 
-  const FilterSidebar = () => (
-    <div className="space-y-8 animate-fade-in">
-      {/* Categories */}
-      <div>
-        <h3 className="text-sm font-semibold text-gold uppercase tracking-wider mb-3">Categories</h3>
-        <div className="space-y-1">
-          <button
-            onClick={() => setSelectedCategory('all')}
-            className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm transition-colors ${
-              selectedCategory === 'all' 
-                ? 'bg-gold/10 text-gold font-medium' 
-                : 'text-dark-300 hover:bg-dark-700'
-            }`}
-          >
-            All Products
-          </button>
-          {categories.map(category => (
-            <button
-              key={category.id}
-              onClick={() => setSelectedCategory(category.id)}
-              className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm transition-colors ${
-                selectedCategory === category.id 
-                  ? 'bg-gold/10 text-gold font-medium' 
-                  : 'text-dark-300 hover:bg-dark-700'
-              }`}
-            >
-              {category.name}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Price Range */}
-      <div>
-        <h3 className="text-sm font-semibold text-gold uppercase tracking-wider mb-3">Price Range</h3>
-        <div className="space-y-1">
-          {priceRanges.map(range => (
-            <button
-              key={range}
-              onClick={() => setPriceRange(range)}
-              className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm transition-colors ${
-                priceRange === range 
-                  ? 'bg-gold/10 text-gold font-medium' 
-                  : 'text-dark-300 hover:bg-dark-700'
-              }`}
-            >
-              {range}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Brands */}
-      <div>
-        <h3 className="text-sm font-semibold text-gold uppercase tracking-wider mb-3">Brand</h3>
-        <div className="space-y-2">
-          {uniqueBrands.map(brand => (
-            <label key={brand} className="flex items-center gap-3 cursor-pointer group">
-              <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
-                selectedBrands.includes(brand)
-                  ? 'bg-gold border-gold'
-                  : 'border-dark-600 group-hover:border-gold'
-              }`}>
-                {selectedBrands.includes(brand) && (
-                  <svg className="w-3.5 h-3.5 text-dark-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                  </svg>
-                )}
-              </div>
-              <span className="text-sm text-dark-300 group-hover:text-dark-100">{brand}</span>
-            </label>
-          ))}
-        </div>
-      </div>
-
-      {/* In Stock */}
-      <div>
-        <h3 className="text-sm font-semibold text-gold uppercase tracking-wider mb-3">Availability</h3>
-        <label className="flex items-center justify-between cursor-pointer group">
-          <span className="text-sm text-dark-300 group-hover:text-dark-100">In Stock Only</span>
-          <div className={`w-11 h-6 rounded-full relative transition-colors ${
-            inStockOnly ? 'bg-gold' : 'bg-dark-700'
-          }`}>
-            <div className={`absolute top-1 w-4 h-4 rounded-full transition-all duration-300 ${
-              inStockOnly ? 'left-6 bg-dark-900' : 'left-1 bg-dark-400'
-            }`} />
-          </div>
-        </label>
-      </div>
-    </div>
-  );
+  const activeFilterCount = (selectedCategory !== 'all' ? 1 : 0) + 
+                            (priceRange !== 'All' ? 1 : 0) + 
+                            selectedBrands.length + 
+                            (inStockOnly ? 1 : 0);
 
   return (
-    <div className="min-h-screen bg-dark-900">
-      {/* Page Title Section */}
-      <section className="py-12 bg-dark-800/50 border-b border-dark-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="text-sm text-dark-400 mb-4 flex items-center gap-2">
-            <Link href="/" className="text-dark-300 hover:text-gold transition-colors">Home</Link>
-            <span>&gt;</span>
-            <span className="text-gold">Products</span>
-          </nav>
-          <h1 className="text-4xl font-bold text-dark-50 mb-2">Our Products</h1>
-          <p className="text-dark-300">{products.length} premium tech products</p>
+    <div className="min-h-screen bg-[#070A0F] text-slate-100 pb-20">
+      {/* Header Banner */}
+      <div className="bg-[#0B0F19] border-b border-slate-800/80 py-12 relative overflow-hidden">
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-gold/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <span className="text-xs font-mono font-bold text-gold uppercase tracking-wider">
+                Tech Bazaar Storefront
+              </span>
+              <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight mt-1">
+                Laptops & Tech Catalog
+              </h1>
+              <p className="text-slate-400 text-sm mt-1">
+                Showing live inventory updated from Railway PostgreSQL database ({sortedProducts.length} items).
+              </p>
+            </div>
+
+            {/* Quick Category Switcher */}
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setSelectedCategory('all')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                  selectedCategory === 'all'
+                    ? 'bg-gold text-slate-950 shadow-md shadow-gold/20'
+                    : 'bg-slate-950 text-slate-400 border border-slate-800 hover:text-white'
+                }`}
+              >
+                All Gear ({productsList.length})
+              </button>
+              <button
+                onClick={() => setSelectedCategory('laptops')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                  selectedCategory === 'laptops'
+                    ? 'bg-gold text-slate-950 shadow-md shadow-gold/20'
+                    : 'bg-slate-950 text-slate-400 border border-slate-800 hover:text-white'
+                }`}
+              >
+                Laptops
+              </button>
+              <button
+                onClick={() => setSelectedCategory('desktops')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                  selectedCategory === 'desktops'
+                    ? 'bg-gold text-slate-950 shadow-md shadow-gold/20'
+                    : 'bg-slate-950 text-slate-400 border border-slate-800 hover:text-white'
+                }`}
+              >
+                Desktops
+              </button>
+            </div>
+          </div>
         </div>
-      </section>
+      </div>
 
-      {/* Main Content */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="flex flex-col lg:flex-row gap-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
-          {/* Sidebar Desktop */}
-          <aside className="w-64 shrink-0 hidden lg:block sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-4 custom-scrollbar">
-            <FilterSidebar />
-          </aside>
-
-          {/* Main Grid Area */}
-          <div className="flex-1 animate-slide-up">
-            
-            {/* Top Bar (Mobile Filters Toggle & Sort) */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-              
-              <div className="flex items-center gap-4 w-full sm:w-auto">
-                <Button 
-                  variant="secondary" 
-                  className="lg:hidden flex-1 sm:flex-none"
-                  onClick={() => setMobileFiltersOpen(true)}
-                >
-                  <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                  </svg>
-                  Filters
-                </Button>
-                <p className="text-sm text-dark-300 whitespace-nowrap">
-                  Showing <span className="text-gold font-medium">{sortedProducts.length}</span> products
-                </p>
+          {/* Left Sidebar Filters */}
+          <div className="hidden lg:block lg:col-span-3 space-y-6">
+            <div className="bg-[#0B0F19] border border-slate-800/90 rounded-3xl p-6 space-y-6 shadow-xl sticky top-24">
+              <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
+                <h3 className="text-base font-bold text-white">Refine Catalog</h3>
+                {activeFilterCount > 0 && (
+                  <button
+                    onClick={clearAllFilters}
+                    className="text-xs font-mono font-bold text-gold hover:underline"
+                  >
+                    Reset ({activeFilterCount})
+                  </button>
+                )}
               </div>
 
-              <div className="flex items-center gap-3 w-full sm:w-auto">
-                <span className="text-sm text-dark-400 hidden sm:inline">Sort by:</span>
-                <select 
+              {/* Brands Filter */}
+              <div className="space-y-3">
+                <label className="block text-xs font-mono font-bold uppercase tracking-wider text-slate-400">
+                  Brand Manufacturer
+                </label>
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {uniqueBrands.map((brand) => (
+                    <label
+                      key={brand}
+                      className="flex items-center gap-2.5 text-xs text-slate-300 hover:text-white cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedBrands.includes(brand)}
+                        onChange={() => handleBrandToggle(brand)}
+                        className="rounded border-slate-700 bg-slate-950 text-gold focus:ring-gold"
+                      />
+                      <span>{brand}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Price Ranges */}
+              <div className="space-y-3 pt-4 border-t border-slate-800/80">
+                <label className="block text-xs font-mono font-bold uppercase tracking-wider text-slate-400">
+                  Price Budget
+                </label>
+                <div className="space-y-2">
+                  {priceRanges.map((range) => (
+                    <label
+                      key={range}
+                      className="flex items-center gap-2.5 text-xs text-slate-300 hover:text-white cursor-pointer"
+                    >
+                      <input
+                        type="radio"
+                        name="priceRange"
+                        checked={priceRange === range}
+                        onChange={() => setPriceRange(range)}
+                        className="border-slate-700 bg-slate-950 text-gold focus:ring-gold"
+                      />
+                      <span>{range}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* In Stock Toggle */}
+              <div className="pt-4 border-t border-slate-800/80">
+                <label className="flex items-center gap-2.5 text-xs font-bold text-slate-300 hover:text-white cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={inStockOnly}
+                    onChange={(e) => setInStockOnly(e.target.checked)}
+                    className="rounded border-slate-700 bg-slate-950 text-gold focus:ring-gold"
+                  />
+                  <span>Show In-Stock Only</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Products Grid */}
+          <div className="lg:col-span-9 space-y-6">
+            {/* Sorting Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#0B0F19] border border-slate-800/90 rounded-2xl p-4">
+              <span className="text-xs font-mono text-slate-400">
+                Showing <strong className="text-white">{sortedProducts.length}</strong> laptops
+              </span>
+
+              <div className="flex items-center gap-3">
+                <label className="text-xs font-mono text-slate-400">Sort By:</label>
+                <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="w-full sm:w-auto bg-dark-800 border border-dark-600 rounded-lg px-4 py-2 text-sm text-dark-100 focus:outline-none focus:border-gold transition-colors appearance-none cursor-pointer"
+                  className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-gold font-medium"
                 >
-                  {sortOptions.map(option => (
-                    <option key={option} value={option}>{option}</option>
+                  {sortOptions.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
                   ))}
                 </select>
               </div>
             </div>
 
-            {/* Product Grid */}
-            {sortedProducts.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                {sortedProducts.map(product => (
-                  <ProductCard 
-                    key={product.id} 
-                    product={product} 
-                    onAddToCart={() => addToCart(product, 1)} 
-                  />
-                ))}
+            {/* Products Grid */}
+            {sortedProducts.length === 0 ? (
+              <div className="bg-[#0B0F19] border border-slate-800/90 rounded-3xl p-16 text-center text-slate-500 space-y-4">
+                <h3 className="text-lg font-bold text-white">No Products Found</h3>
+                <p className="text-xs text-slate-400">
+                  Try adjusting your filters or price range to find available laptops.
+                </p>
+                <button
+                  onClick={clearAllFilters}
+                  className="px-6 py-3 bg-gold text-slate-950 font-bold text-xs rounded-xl shadow-md"
+                >
+                  Reset All Filters
+                </button>
               </div>
             ) : (
-              /* Empty State */
-              <div className="flex flex-col items-center justify-center py-20 px-4 text-center glass rounded-2xl border border-dark-700">
-                <div className="w-16 h-16 bg-dark-800 rounded-full flex items-center justify-center mb-4">
-                  <svg className="w-8 h-8 text-dark-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-bold text-dark-50 mb-2">No products found</h3>
-                <p className="text-dark-300 mb-6 max-w-md">Try adjusting your filters or search criteria to find what you're looking for.</p>
-                <Button onClick={clearFilters} variant="primary">
-                  Clear All Filters
-                </Button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {sortedProducts.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    onAddToCart={(p) => addToCart(p, 1)}
+                  />
+                ))}
               </div>
             )}
           </div>
         </div>
-      </section>
-
-      {/* Mobile Filters Drawer */}
-      {mobileFiltersOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden flex">
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setMobileFiltersOpen(false)} />
-          <div className="relative w-full max-w-xs bg-white h-full shadow-2xl flex flex-col animate-slide-in-right">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-              <h2 className="text-lg font-bold text-slate-900">Filters</h2>
-              <button onClick={() => setMobileFiltersOpen(false)} className="text-slate-400 hover:text-slate-900">
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto px-6 py-6 custom-scrollbar">
-              <FilterSidebar />
-            </div>
-            <div className="p-6 border-t border-slate-200 bg-white">
-              <div className="flex gap-4">
-                <Button variant="secondary" onClick={clearFilters} className="flex-1">Clear</Button>
-                <Button variant="primary" onClick={() => setMobileFiltersOpen(false)} className="flex-1">Apply</Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -325,8 +326,8 @@ function ProductsCatalog() {
 export default function ProductsPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-slate-200 border-t-gold rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-gold font-mono">
+        Loading Live Catalog...
       </div>
     }>
       <ProductsCatalog />
