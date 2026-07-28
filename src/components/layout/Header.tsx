@@ -64,6 +64,7 @@ export default function Header() {
     { name: "Laptops", href: "/products?category=laptops" },
     { name: "Desktops", href: "/products?category=desktops" },
     { name: "Accessories", href: "/products?category=accessories" },
+    { name: "Track Order", href: "/account/orders" },
     { name: "About", href: "/about" },
   ];
 

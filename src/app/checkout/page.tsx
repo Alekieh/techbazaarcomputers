@@ -82,6 +82,9 @@ export default function CheckoutPage() {
       const data = await res.json();
       if (res.ok) {
         setOrderNumber(data.orderNumber);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("tb_last_order", data.orderNumber);
+        }
         setOrderSuccess(true);
         clearCart();
       } else {

@@ -36,7 +36,15 @@ function OrderTrackingContent() {
   };
 
   useEffect(() => {
-    fetchOrders(initialQuery);
+    let q = initialQuery;
+    if (!q && typeof window !== "undefined") {
+      const savedLastOrder = localStorage.getItem("tb_last_order");
+      if (savedLastOrder) {
+        q = savedLastOrder;
+        setSearchQuery(savedLastOrder);
+      }
+    }
+    fetchOrders(q);
   }, [initialQuery]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
